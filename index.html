@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <div class="main">
         <p class="tagline">PREMIUM MESSENGER</p>
         <h1>PRIME</h1>
@@ -23,7 +24,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // Твои данные, которые ты скинул
         const firebaseConfig = {
             apiKey: "AIzaSyDmhhGZ-yS5Q8RvYVeKObnj3JlANVzPG6M",
             authDomain: "primemessenger-73933.firebaseapp.com",
@@ -37,7 +37,16 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // Логика кнопки
+        const showBtn = document.getElementById('show-reg-btn');
+        const authForm = document.getElementById('auth-form');
+
+        // Логика появления полей
+        showBtn.onclick = () => {
+            showBtn.style.display = 'none';
+            authForm.style.display = 'flex';
+        };
+
+        // Логика регистрации
         document.getElementById('reg-btn').onclick = () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
@@ -48,12 +57,8 @@
             }
 
             createUserWithEmailAndPassword(auth, email, pass)
-                .then((userCredential) => {
-                    alert("Успех! Аккаунт " + email + " создан.");
-                })
-                .catch((error) => {
-                    alert("Ошибка: " + error.message);
-                });
+                .then(() => alert("Успех! Аккаунт создан."))
+                .catch((error) => alert("Ошибка: " + error.message));
         };
     </script>
 </body>
