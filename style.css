@@ -39,3 +39,24 @@ h1 {
     border-color: #007aff;
     box-shadow: 0 0 10px rgba(0, 122, 255, 0.3);
 }
+
+.auth-container {
+    display: none; /* Это мы переключаем через JS */
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.input-prime {
+    background: #111;
+    border: 1px solid #333;
+    padding: 12px 20px;
+    border-radius: 10px;
+    color: #fff;
+    width: 250px;
+    outline: none;
+}
+
+.input-prime:focus {
+    border-color: #007aff;
+}
