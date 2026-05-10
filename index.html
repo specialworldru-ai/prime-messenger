@@ -9,7 +9,50 @@
     <div class="main">
         <p class="tagline">PREMIUM MESSENGER</p>
         <h1>PRIME</h1>
-        <button class="status-btn">Зарегистрироваться</button>
+        
+        <div class="auth-container">
+            <input type="email" id="email" placeholder="Почта" class="input-prime">
+            <input type="password" id="password" placeholder="Пароль" class="input-prime">
+            <button id="reg-btn" class="status-btn">Зарегистрироваться</button>
+        </div>
     </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Твои данные, которые ты скинул
+        const firebaseConfig = {
+            apiKey: "AIzaSyDmhhGZ-yS5Q8RvYVeKObnj3JlANVzPG6M",
+            authDomain: "primemessenger-73933.firebaseapp.com",
+            projectId: "primemessenger-73933",
+            storageBucket: "primemessenger-73933.firebasestorage.app",
+            messagingSenderId: "129908663923",
+            appId: "1:129908663923:web:1341089b3acd29439cac06",
+            measurementId: "G-2PH3N5Q2N7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Логика кнопки
+        document.getElementById('reg-btn').onclick = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+
+            if (email === "" || pass === "") {
+                alert("Заполни все поля!");
+                return;
+            }
+
+            createUserWithEmailAndPassword(auth, email, pass)
+                .then((userCredential) => {
+                    alert("Успех! Аккаунт " + email + " создан.");
+                })
+                .catch((error) => {
+                    alert("Ошибка: " + error.message);
+                });
+        };
+    </script>
 </body>
 </html>
