@@ -14,9 +14,15 @@
         <button id="show-reg-btn" class="status-btn">Зарегистрироваться</button>
 
         <div id="auth-form" class="auth-container" style="display: none;">
+            <h2 id="auth-title">Регистрация</h2>
             <input type="email" id="email" placeholder="Почта" class="input-prime">
             <input type="password" id="password" placeholder="Пароль" class="input-prime">
-            <button id="reg-btn" class="status-btn">Создать аккаунт</button>
+            
+            <button id="auth-action-btn" class="status-btn">Создать аккаунт</button>
+            
+            <p id="toggle-auth" style="cursor:pointer; font-size: 12px; margin-top: 15px; color: #888;">
+                Уже есть аккаунт? <span style="color: #007aff;">Войти</span>
+            </p>
         </div>
     </div>
 
@@ -41,7 +47,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDmhhGZ-yS5Q8RvYVeKObnj3JlANVzPG6M",
@@ -56,35 +62,58 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
+        let isLoginMode = false;
+
         const showBtn = document.getElementById('show-reg-btn');
         const authForm = document.getElementById('auth-form');
         const messengerApp = document.getElementById('messenger-app');
         const mainScreen = document.querySelector('.main');
+        const authTitle = document.getElementById('auth-title');
+        const authActionBtn = document.getElementById('auth-action-btn');
+        const toggleAuth = document.getElementById('toggle-auth');
 
-        // Логика кнопки "Зарегистрироваться" (показать форму)
         showBtn.onclick = () => {
             showBtn.style.display = 'none';
             authForm.style.display = 'flex';
         };
 
-        // Логика создания аккаунта и ПЕРЕХОДА в мессенджер
-        document.getElementById('reg-btn').onclick = () => {
+        toggleAuth.onclick = () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                authTitle.innerText = "Вход";
+                authActionBtn.innerText = "Войти";
+                toggleAuth.innerHTML = 'Нет аккаунта? <span style="color: #007aff;">Создать</span>';
+            } else {
+                authTitle.innerText = "Регистрация";
+                authActionBtn.innerText = "Создать аккаунт";
+                toggleAuth.innerHTML = 'Уже есть аккаунт? <span style="color: #007aff;">Войти</span>';
+            }
+        };
+
+        authActionBtn.onclick = () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
 
             if (email === "" || pass === "") {
-                alert("Заполни все поля!");
+                alert("Заполни поля!");
                 return;
             }
 
-            createUserWithEmailAndPassword(auth, email, pass)
-                .then(() => {
-                    // ПРЯЧЕМ главную и форму
-                    mainScreen.style.display = 'none';
-                    // ПОКАЗЫВАЕМ мессенджер
-                    messengerApp.style.display = 'flex';
-                })
-                .catch((error) => alert("Ошибка: " + error.message));
+            if (isLoginMode) {
+                signInWithEmailAndPassword(auth, email, pass)
+                    .then(() => {
+                        mainScreen.style.display = 'none';
+                        messengerApp.style.display = 'flex';
+                    })
+                    .catch((error) => alert("Ошибка входа: " + error.message));
+            } else {
+                createUserWithEmailAndPassword(auth, email, pass)
+                    .then(() => {
+                        mainScreen.style.display = 'none';
+                        messengerApp.style.display = 'flex';
+                    })
+                    .catch((error) => alert("Ошибка регистрации: " + error.message));
+            }
         };
     </script>
 </body>
