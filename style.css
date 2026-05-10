@@ -13,13 +13,14 @@ body {
 
 /* Главный экран (Регистрация/Вход) */
 .main {
+    display: flex;
+    flex-direction: column; /* ЭТО САМОЕ ВАЖНОЕ: выстраивает лого, инпуты и кнопку ДРУГ ПОД ДРУГОМ */
+    align-items: center;    /* Центрирует всё по горизонтали */
+    justify-content: center; /* Центрирует всё по вертикали */
+    gap: 20px;              /* Делает аккуратные отступы между элементами */
+    min-height: 100vh;      /* Растягивает контейнер на весь экран */
     text-align: center;
-    background: rgba(20, 20, 20, 0.7);
-    padding: 60px 50px; /* Увеличили отступы сверху/снизу */
-    border-radius: 32px;
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+}
     
     /* ВОТ ЭТО ИСПРАВИТ ВЕРСТКУ */
     display: flex;
