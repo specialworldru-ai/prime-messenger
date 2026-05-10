@@ -30,43 +30,41 @@
         <aside class="sidebar">
             <div class="sidebar-header">PRIME</div>
             <div class="chats-list">
-            <div class="chat-item active">
-    <div class="chat-avatar">G</div>
-    <div class="chat-info">
-<div class="chat-item active">
-    <div class="chat-avatar">G</div> <div class="chat-info">
-        <div class="chat-name">Общий чат</div>
-        <div class="chat-last-msg">Загрузка сообщений...</div>
-    </div>
-</div>>
-        </div>
-    </div>
+                
+                <div class="chat-item active">
+                    <div class="chat-avatar">G</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Общий чат</div>
+                        <div class="chat-last-msg">Загрузка сообщений...</div>
+                    </div>
+                </div>
 
-    <div class="chat-item">
-        <div class="chat-avatar notes">Saved</div>
-        <div class="chat-info">
-            <div class="chat-name">Заметки</div>
-            <div class="chat-last-msg">Личное пространство</div>
-        </div>
-    </div>
+                <div class="chat-item">
+                    <div class="chat-avatar notes">Saved</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Заметки</div>
+                        <div class="chat-last-msg">Личное пространство</div>
+                    </div>
+                </div>
 
-    <div class="chat-item">
-        <div class="chat-avatar">S</div>
-        <div class="chat-info">
-            <div class="chat-name">Support</div>
-            <div class="chat-last-msg">Бот поддержки PRIME</div>
-        </div>
-    </div>
-</div>
+                <div class="chat-item">
+                    <div class="chat-avatar">S</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Support</div>
+                        <div class="chat-last-msg">Бот поддержки PRIME</div>
+                    </div>
+                </div>
+
+            </div>
         </aside>
+
         <main class="chat-window">
             <div class="chat-header">Общий чат</div>
-            <div id="messages" class="messages-area">
-                </div>
+            <div id="messages" class="messages-area"></div>
             <div class="message-input-area">
-    <input type="text" id="msg-input" placeholder="Напишите сообщение..." class="input-prime">
-    <button id="send-btn" class="status-btn">Отправить</button>
-</div>
+                <input type="text" id="msg-input" placeholder="Напишите сообщение..." class="input-prime">
+                <button id="send-btn" class="status-btn">Отправить</button>
+            </div>
         </main>
     </div>
 
@@ -82,7 +80,7 @@
             storageBucket: "primemessenger-73933.firebasestorage.app",
             messagingSenderId: "129908663923",
             appId: "1:129908663923:web:1341089b3acd29439cac06",
-            measurementId: "G-2PH3N5Q2N7"
+            measurementId: "G-2PH3N5Q2N7", // Тут добавлена запятая!
             databaseURL: "https://primemessenger-73933-default-rtdb.europe-west1.firebasedatabase.app"
         };
 
@@ -104,7 +102,6 @@
         let currentUser = null;
         let isLoginMode = false;
 
-        // Авто-вход
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
@@ -116,27 +113,20 @@
             }
         });
 
-        // Показать форму
         showBtn.onclick = () => {
             showBtn.style.display = 'none';
             authForm.style.display = 'flex';
         };
 
-        // Переключение Вход/Рега
         toggleAuth.onclick = () => {
             isLoginMode = !isLoginMode;
-            if (isLoginMode) {
-                authTitle.innerText = "Вход";
-                authActionBtn.innerText = "Войти";
-                toggleAuth.innerHTML = 'Нет аккаунта? <span style="color: #007aff;">Создать</span>';
-            } else {
-                authTitle.innerText = "Регистрация";
-                authActionBtn.innerText = "Создать аккаунт";
-                toggleAuth.innerHTML = 'Уже есть аккаунт? <span style="color: #007aff;">Войти</span>';
-            }
+            authTitle.innerText = isLoginMode ? "Вход" : "Регистрация";
+            authActionBtn.innerText = isLoginMode ? "Войти" : "Создать аккаунт";
+            toggleAuth.innerHTML = isLoginMode ? 
+                'Нет аккаунта? <span style="color: #007aff;">Создать</span>' : 
+                'Уже есть аккаунт? <span style="color: #007aff;">Войти</span>';
         };
 
-        // Кнопка действия
         authActionBtn.onclick = () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
@@ -149,7 +139,6 @@
             }
         };
 
-        // Отправка сообщения
         sendBtn.onclick = () => {
             const text = msgInput.value.trim();
             if (text && currentUser) {
@@ -165,31 +154,25 @@
         msgInput.onkeydown = (e) => { if(e.key === 'Enter') sendBtn.click(); };
 
         // Прием сообщений
-const globalChatPreview = document.querySelector('.chat-item.active .chat-last-msg');
+        onChildAdded(ref(db, 'messages/'), (data) => {
+            const msg = data.val();
+            if (!currentUser) return; // Ждем пока юзер залогинится
 
-// Слушаем сообщения из базы
-onChildAdded(ref(db, 'messages/'), (data) => {
-    const msg = data.val();
-    const isMine = msg.email === currentUser?.email;
-    
-    // 1. Добавляем сообщение в окно чата
-    const msgDiv = document.createElement('div');
-    msgDiv.className = isMine ? 'msg mine' : 'msg';
-    msgDiv.innerHTML = `
-        <div class="msg-sender">${msg.email.split('@')[0]}</div>
-        <div class="msg-text">${msg.text}</div>
-    `;
-    messagesArea.appendChild(msgDiv);
-    
-    // 2. Авто-скролл вниз (чтобы не крутить колесиком)
-    messagesArea.scrollTop = messagesArea.scrollHeight;
+            const isMine = msg.email === currentUser.email;
+            const msgDiv = document.createElement('div');
+            msgDiv.className = isMine ? 'msg mine' : 'msg';
+            msgDiv.innerHTML = `
+                <div class="msg-sender">${msg.email.split('@')[0]}</div>
+                <div class="msg-text">${msg.text}</div>
+            `;
+            messagesArea.appendChild(msgDiv);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
 
-    // 3. Обновляем превью в боковой панели
-    const preview = document.querySelector('.chat-item.active .chat-last-msg');
-    if (preview) {
-        preview.innerText = (isMine ? "Вы: " : "") + msg.text;
-    }
-});
+            const preview = document.querySelector('.chat-item.active .chat-last-msg');
+            if (preview) {
+                preview.innerText = (isMine ? "Вы: " : "") + msg.text;
+            }
+        });
     </script>
 </body>
 </html>
