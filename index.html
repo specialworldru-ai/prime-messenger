@@ -36,8 +36,7 @@
         <main class="chat-window">
             <div class="chat-header">Общий чат</div>
             <div id="messages" class="messages-area">
-                <div class="msg">Добро пожаловать в PRIME!</div>
-            </div>
+                </div>
             <div class="message-input-area">
                 <input type="text" id="msg-input" placeholder="Напишите сообщение..." class="input-prime">
                 <button id="send-btn" class="status-btn">Отправить</button>
@@ -46,79 +45,114 @@
     </div>
 
     <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyDmhhGZ-yS5Q8RvYVeKObnj3JlANVzPG6M",
-        authDomain: "primemessenger-73933.firebaseapp.com",
-        projectId: "primemessenger-73933",
-        storageBucket: "primemessenger-73933.firebasestorage.app",
-        messagingSenderId: "129908663923",
-        appId: "1:129908663923:web:1341089b3acd29439cac06",
-        measurementId: "G-2PH3N5Q2N7"
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyDmhhGZ-yS5Q8RvYVeKObnj3JlANVzPG6M",
+            authDomain: "primemessenger-73933.firebaseapp.com",
+            projectId: "primemessenger-73933",
+            storageBucket: "primemessenger-73933.firebasestorage.app",
+            messagingSenderId: "129908663923",
+            appId: "1:129908663923:web:1341089b3acd29439cac06",
+            measurementId: "G-2PH3N5Q2N7"
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-    const showBtn = document.getElementById('show-reg-btn');
-    const authForm = document.getElementById('auth-form');
-    const messengerApp = document.getElementById('messenger-app');
-    const mainScreen = document.querySelector('.main');
-    const authTitle = document.getElementById('auth-title');
-    const authActionBtn = document.getElementById('auth-action-btn');
-    const toggleAuth = document.getElementById('toggle-auth');
+        const mainScreen = document.querySelector('.main');
+        const messengerApp = document.getElementById('messenger-app');
+        const authForm = document.getElementById('auth-form');
+        const showBtn = document.getElementById('show-reg-btn');
+        const authTitle = document.getElementById('auth-title');
+        const authActionBtn = document.getElementById('auth-action-btn');
+        const toggleAuth = document.getElementById('toggle-auth');
+        const msgInput = document.getElementById('msg-input');
+        const sendBtn = document.getElementById('send-btn');
+        const messagesArea = document.getElementById('messages');
 
-    // === ВОТ ЭТА МАГИЯ ДЕРЖИТ ТЕБЯ В СИСТЕМЕ ===
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            // Если пользователь уже вошел — сразу показываем мессенджер
-            mainScreen.style.display = 'none';
-            messengerApp.style.display = 'flex';
-            console.log("Автоматический вход:", user.email);
-        } else {
-            // Если не вошел — показываем главный экран
-            mainScreen.style.display = 'flex';
-            messengerApp.style.display = 'none';
-        }
-    });
+        let currentUser = null;
+        let isLoginMode = false;
 
-    let isLoginMode = false;
+        // Авто-вход
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                mainScreen.style.display = 'none';
+                messengerApp.style.display = 'flex';
+            } else {
+                mainScreen.style.display = 'flex';
+                messengerApp.style.display = 'none';
+            }
+        });
 
-    showBtn.onclick = () => {
-        showBtn.style.display = 'none';
-        authForm.style.display = 'flex';
-    };
+        // Показать форму
+        showBtn.onclick = () => {
+            showBtn.style.display = 'none';
+            authForm.style.display = 'flex';
+        };
 
-    toggleAuth.onclick = () => {
-        isLoginMode = !isLoginMode;
-        if (isLoginMode) {
-            authTitle.innerText = "Вход";
-            authActionBtn.innerText = "Войти";
-            toggleAuth.innerHTML = 'Нет аккаунта? <span style="color: #007aff;">Создать</span>';
-        } else {
-            authTitle.innerText = "Регистрация";
-            authActionBtn.innerText = "Создать аккаунт";
-            toggleAuth.innerHTML = 'Уже есть аккаунт? <span style="color: #007aff;">Войти</span>';
-        }
-    };
+        // Переключение Вход/Рега
+        toggleAuth.onclick = () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                authTitle.innerText = "Вход";
+                authActionBtn.innerText = "Войти";
+                toggleAuth.innerHTML = 'Нет аккаунта? <span style="color: #007aff;">Создать</span>';
+            } else {
+                authTitle.innerText = "Регистрация";
+                authActionBtn.innerText = "Создать аккаунт";
+                toggleAuth.innerHTML = 'Уже есть аккаунт? <span style="color: #007aff;">Войти</span>';
+            }
+        };
 
-    authActionBtn.onclick = () => {
-        const email = document.getElementById('email').value;
-        const pass = document.getElementById('password').value;
+        // Кнопка действия
+        authActionBtn.onclick = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            if (!email || !pass) return alert("Заполни поля!");
 
-        if (email === "" || pass === "") {
-            alert("Заполни поля!");
-            return;
-        }
+            if (isLoginMode) {
+                signInWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+            } else {
+                createUserWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+            }
+        };
 
-        if (isLoginMode) {
-            signInWithEmailAndPassword(auth, email, pass).catch((error) => alert("Ошибка входа: " + error.message));
-        } else {
-            createUserWithEmailAndPassword(auth, email, pass).catch((error) => alert("Ошибка регистрации: " + error.message));
-        }
-    };
-</script>
+        // Отправка сообщения
+        sendBtn.onclick = () => {
+            const text = msgInput.value.trim();
+            if (text && currentUser) {
+                push(ref(db, 'messages/'), {
+                    email: currentUser.email,
+                    text: text,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                });
+                msgInput.value = "";
+            }
+        };
+
+        msgInput.onkeydown = (e) => { if(e.key === 'Enter') sendBtn.click(); };
+
+        // Прием сообщений
+        onChildAdded(ref(db, 'messages/'), (data) => {
+            const msg = data.val();
+            const msgElement = document.createElement('div');
+            const isMine = msg.email === currentUser?.email;
+            
+            msgElement.className = isMine ? 'msg mine' : 'msg';
+            msgElement.innerHTML = `
+                <div class="msg-sender">${msg.email.split('@')[0]}</div>
+                <div class="msg-text">${msg.text}</div>
+                <div class="msg-time">${msg.time}</div>
+            `;
+            
+            messagesArea.appendChild(msgElement);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        });
+    </script>
 </body>
 </html>
