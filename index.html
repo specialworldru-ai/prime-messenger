@@ -34,7 +34,31 @@
         <div class="chat-avatar">G</div>
         <div class="chat-info">
             <div class="chat-name">Общий чат</div>
-            <div class="chat-last-msg">Все участники здесь</div>
+            // Находим элемент, где написано "Все участники здесь" (превью в сайдбаре)
+const globalChatPreview = document.querySelector('.chat-item.active .chat-last-msg');
+
+onChildAdded(ref(db, 'messages/'), (data) => {
+    const msg = data.val();
+    const msgElement = document.createElement('div');
+    const isMine = msg.email === currentUser?.email;
+    
+    msgElement.className = isMine ? 'msg mine' : 'msg';
+    msgElement.innerHTML = `
+        <div class="msg-sender">${msg.email.split('@')[0]}</div>
+        <div class="msg-text">${msg.text}</div>
+        <div class="msg-time">${msg.time}</div>
+    `;
+    
+    messagesArea.appendChild(msgElement);
+    
+    // 1. АВТО-СКРОЛЛ (чтобы видеть последние сообщения сразу)
+    messagesArea.scrollTop = messagesArea.scrollHeight;
+
+    // 2. ОБНОВЛЕНИЕ ПРЕВЬЮ (последнее сообщение в списке чатов)
+    if (globalChatPreview) {
+        globalChatPreview.innerText = isMine ? `Вы: ${msg.text}` : `${msg.email.split('@')[0]}: ${msg.text}`;
+    }
+});
         </div>
     </div>
 
