@@ -33,32 +33,13 @@
     <div class="chat-item active">
         <div class="chat-avatar">G</div>
         <div class="chat-info">
-            <div class="chat-name">Общий чат</div>
-            // Находим элемент, где написано "Все участники здесь" (превью в сайдбаре)
-const globalChatPreview = document.querySelector('.chat-item.active .chat-last-msg');
-
-onChildAdded(ref(db, 'messages/'), (data) => {
-    const msg = data.val();
-    const msgElement = document.createElement('div');
-    const isMine = msg.email === currentUser?.email;
-    
-    msgElement.className = isMine ? 'msg mine' : 'msg';
-    msgElement.innerHTML = `
-        <div class="msg-sender">${msg.email.split('@')[0]}</div>
-        <div class="msg-text">${msg.text}</div>
-        <div class="msg-time">${msg.time}</div>
-    `;
-    
-    messagesArea.appendChild(msgElement);
-    
-    // 1. АВТО-СКРОЛЛ (чтобы видеть последние сообщения сразу)
-    messagesArea.scrollTop = messagesArea.scrollHeight;
-
-    // 2. ОБНОВЛЕНИЕ ПРЕВЬЮ (последнее сообщение в списке чатов)
-    if (globalChatPreview) {
-        globalChatPreview.innerText = isMine ? `Вы: ${msg.text}` : `${msg.email.split('@')[0]}: ${msg.text}`;
-    }
-});
+            <div class="chat-item active">
+    <div class="chat-avatar">G</div>
+    <div class="chat-info">
+        <div class="chat-name">Общий чат</div>
+        <div class="chat-last-msg">Все участники здесь</div>
+    </div>
+</div>
         </div>
     </div>
 
@@ -184,21 +165,34 @@ onChildAdded(ref(db, 'messages/'), (data) => {
         msgInput.onkeydown = (e) => { if(e.key === 'Enter') sendBtn.click(); };
 
         // Прием сообщений
-        onChildAdded(ref(db, 'messages/'), (data) => {
-            const msg = data.val();
-            const msgElement = document.createElement('div');
-            const isMine = msg.email === currentUser?.email;
-            
-            msgElement.className = isMine ? 'msg mine' : 'msg';
-            msgElement.innerHTML = `
-                <div class="msg-sender">${msg.email.split('@')[0]}</div>
-                <div class="msg-text">${msg.text}</div>
-                <div class="msg-time">${msg.time}</div>
-            `;
-            
-            messagesArea.appendChild(msgElement);
-            messagesArea.scrollTop = messagesArea.scrollHeight;
-        });
+const globalChatPreview = document.querySelector('.chat-item.active .chat-last-msg');
+
+onChildAdded(ref(db, 'messages/'), (data) => {
+    const msg = data.val();
+    const msgElement = document.createElement('div');
+    
+    // Проверяем, наше это сообщение или нет (чтобы покрасить в синий)
+    const isMine = msg.email === currentUser?.email;
+    
+    msgElement.className = isMine ? 'msg mine' : 'msg';
+    msgElement.innerHTML = `
+        <div class="msg-sender">${msg.email.split('@')[0]}</div>
+        <div class="msg-text">${msg.text}</div>
+        <div class="msg-time">${msg.time}</div>
+    `;
+    
+    // Добавляем сообщение в окно чата
+    messagesArea.appendChild(msgElement);
+    
+    // ЛОГИКА СКРОЛЛА: всегда опускаем вниз при новом сообщении
+    messagesArea.scrollTop = messagesArea.scrollHeight;
+
+    // ЛОГИКА ПРЕВЬЮ: меняем "Все участники здесь" на текст сообщения
+    if (globalChatPreview) {
+        const senderName = isMine ? "Вы" : msg.email.split('@')[0];
+        globalChatPreview.innerText = `${senderName}: ${msg.text}`;
+    }
+});
     </script>
 </body>
 </html>
