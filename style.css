@@ -9,16 +9,33 @@ body {
     margin: 0;
     font-family: sans-serif;
 }
+.main {
+    text-align: center;
+}
+.tagline {
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: #888;
+    margin-bottom: 5px;
+}
 h1 {
-    font-size: 80px;
+    font-size: 90px;
     margin: 0;
     background: linear-gradient(45deg, #007aff, #00ffcc);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    margin-bottom: 25px;
 }
-.status {
+.status-btn {
+    background: transparent;
+    color: #fff;
     border: 1px solid #333;
-    padding: 10px 20px;
+    padding: 12px 30px;
     border-radius: 20px;
-    margin-top: 20px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.status-btn:hover {
+    border-color: #007aff;
+    box-shadow: 0 0 10px rgba(0, 122, 255, 0.3);
 }
