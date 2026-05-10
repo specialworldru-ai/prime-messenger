@@ -167,30 +167,27 @@
         // Прием сообщений
 const globalChatPreview = document.querySelector('.chat-item.active .chat-last-msg');
 
+// Слушаем сообщения из базы
 onChildAdded(ref(db, 'messages/'), (data) => {
     const msg = data.val();
-    const msgElement = document.createElement('div');
-    
-    // Проверяем, наше это сообщение или нет (чтобы покрасить в синий)
     const isMine = msg.email === currentUser?.email;
     
-    msgElement.className = isMine ? 'msg mine' : 'msg';
-    msgElement.innerHTML = `
+    // 1. Добавляем сообщение в окно чата
+    const msgDiv = document.createElement('div');
+    msgDiv.className = isMine ? 'msg mine' : 'msg';
+    msgDiv.innerHTML = `
         <div class="msg-sender">${msg.email.split('@')[0]}</div>
         <div class="msg-text">${msg.text}</div>
-        <div class="msg-time">${msg.time}</div>
     `;
+    messagesArea.appendChild(msgDiv);
     
-    // Добавляем сообщение в окно чата
-    messagesArea.appendChild(msgElement);
-    
-    // ЛОГИКА СКРОЛЛА: всегда опускаем вниз при новом сообщении
+    // 2. Авто-скролл вниз (чтобы не крутить колесиком)
     messagesArea.scrollTop = messagesArea.scrollHeight;
 
-    // ЛОГИКА ПРЕВЬЮ: меняем "Все участники здесь" на текст сообщения
-    if (globalChatPreview) {
-        const senderName = isMine ? "Вы" : msg.email.split('@')[0];
-        globalChatPreview.innerText = `${senderName}: ${msg.text}`;
+    // 3. Обновляем превью в боковой панели
+    const preview = document.querySelector('.chat-item.active .chat-last-msg');
+    if (preview) {
+        preview.innerText = (isMine ? "Вы: " : "") + msg.text;
     }
 });
     </script>
