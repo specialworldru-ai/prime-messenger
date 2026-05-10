@@ -111,3 +111,68 @@ h1 {
     text-align: right;
     margin-top: 5px;
 }
+
+.chats-list {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 5px;
+}
+
+.chat-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    gap: 12px;
+}
+
+.chat-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.chat-item.active {
+    background: #007aff;
+}
+
+.chat-avatar {
+    width: 45px;
+    height: 45px;
+    background: #333;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.chat-avatar.notes {
+    background: linear-gradient(45deg, #00ffcc, #007aff);
+    font-size: 10px;
+}
+
+.chat-info {
+    overflow: hidden;
+}
+
+.chat-name {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.chat-last-msg {
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-item.active .chat-last-msg {
+    color: #cce4ff;
+}
