@@ -199,3 +199,26 @@ h1 {
 
 .msg-sender { font-size: 10px; opacity: 0.6; margin-bottom: 4px; }
 .msg-time { font-size: 9px; opacity: 0.5; text-align: right; margin-top: 5px; }
+
+/* Контейнер для ввода сообщений */
+.message-input-area {
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2); /* Легкое затемнение под полем */
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05); /* Тонкая линия разделения */
+}
+
+/* Растягиваем поле ввода */
+.message-input-area .input-prime {
+    flex: 1; /* Растягивает инпут на всё свободное место */
+    width: 100%; /* Гарантирует ширину */
+    margin-bottom: 0; /* Убираем лишние отступы */
+}
+
+/* Фиксируем кнопку */
+#send-btn {
+    padding: 14px 30px;
+    flex-shrink: 0; /* Чтобы кнопка не сжималась */
+}
