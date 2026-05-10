@@ -20,6 +20,25 @@
         </div>
     </div>
 
+    <div id="messenger-app" class="messenger-container" style="display: none;">
+        <aside class="sidebar">
+            <div class="sidebar-header">PRIME</div>
+            <div class="chats-list">
+                <div class="chat-item active">Общий чат</div>
+            </div>
+        </aside>
+        <main class="chat-window">
+            <div class="chat-header">Общий чат</div>
+            <div id="messages" class="messages-area">
+                <div class="msg">Добро пожаловать в PRIME!</div>
+            </div>
+            <div class="message-input-area">
+                <input type="text" id="msg-input" placeholder="Напишите сообщение..." class="input-prime">
+                <button id="send-btn" class="status-btn">Отправить</button>
+            </div>
+        </main>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -39,14 +58,16 @@
 
         const showBtn = document.getElementById('show-reg-btn');
         const authForm = document.getElementById('auth-form');
+        const messengerApp = document.getElementById('messenger-app');
+        const mainScreen = document.querySelector('.main');
 
-        // Логика появления полей
+        // Логика кнопки "Зарегистрироваться" (показать форму)
         showBtn.onclick = () => {
             showBtn.style.display = 'none';
             authForm.style.display = 'flex';
         };
 
-        // Логика регистрации
+        // Логика создания аккаунта и ПЕРЕХОДА в мессенджер
         document.getElementById('reg-btn').onclick = () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
@@ -57,7 +78,12 @@
             }
 
             createUserWithEmailAndPassword(auth, email, pass)
-                .then(() => alert("Успех! Аккаунт создан."))
+                .then(() => {
+                    // ПРЯЧЕМ главную и форму
+                    mainScreen.style.display = 'none';
+                    // ПОКАЗЫВАЕМ мессенджер
+                    messengerApp.style.display = 'flex';
+                })
                 .catch((error) => alert("Ошибка: " + error.message));
         };
     </script>
