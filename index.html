@@ -171,15 +171,20 @@
 
     // ПЕРЕКЛЮЧЕНИЕ ЧАТОВ
     chatItems.forEach(item => {
-        item.onclick = () => {
-            chatItems.forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-            const name = item.querySelector('.chat-name').innerText;
-            chatHeader.innerText = name;
-            currentChat = (name === 'Заметки') ? 'notes' : 'global';
-            loadMessages();
-        };
-    });
+    item.onclick = () => {
+        chatItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+
+        // Важно: берем имя именно из .chat-name
+        const name = item.querySelector('.chat-name').innerText;
+        chatHeader.innerText = name;
+        
+        currentChat = (name === 'Заметки') ? 'notes' : 'global';
+
+        messagesArea.innerHTML = '';
+        loadMessages(); // Это запустит загрузку данных из нужной папки
+    };
+});;
 
     // ОТПРАВКА СООБЩЕНИЙ
     sendBtn.onclick = () => {
