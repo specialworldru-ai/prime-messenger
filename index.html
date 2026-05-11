@@ -114,26 +114,40 @@
 
     // ФУНКЦИЯ ЗАГРУЗКИ СООБЩЕНИЙ
     function loadMessages() {
-        if (!currentUser) return;
-        messagesArea.innerHTML = '';
-        const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-        
-        off(ref(db, 'messages/'));
-        off(ref(db, `notes/${currentUser.uid}/`));
+    if (!currentUser) return;
+    
+    messagesArea.innerHTML = '';
+    const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
+    
+    // Отключаем старые прослушки
+    off(ref(db, 'messages/'));
+    off(ref(db, `notes/${currentUser.uid}/`));
 
-        onChildAdded(ref(db, path), (data) => {
-            const msg = data.val();
-            const isMine = msg.email === currentUser.email;
-            const msgDiv = document.createElement('div');
-            msgDiv.className = isMine ? 'msg mine' : 'msg';
-            msgDiv.innerHTML = `
-                <div class="msg-sender">${currentChat === 'global' ? msg.email.split('@')[0] : 'Заметка'}</div>
-                <div class="msg-text">${msg.text}</div>
-            `;
-            messagesArea.appendChild(msgDiv);
-            messagesArea.scrollTop = messagesArea.scrollHeight;
-        });
-    }
+    onChildAdded(ref(db, path), (data) => {
+        const msg = data.val();
+        const isMine = msg.email === currentUser.email;
+        
+        // 1. Отрисовка сообщения
+        const msgDiv = document.createElement('div');
+        msgDiv.className = isMine ? 'msg mine' : 'msg';
+        msgDiv.innerHTML = `
+            <div class="msg-sender">${currentChat === 'global' ? msg.email.split('@')[0] : 'Заметка'}</div>
+            <div class="msg-text">${msg.text}</div>
+        `;
+        messagesArea.appendChild(msgDiv);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+
+        // 2. Безопасное обновление превью в сайдбаре
+        // Ищем превью только внутри того чата, который сейчас активен
+        const activeItem = document.querySelector('.chat-item.active');
+        if (activeItem) {
+            const preview = activeItem.querySelector('.chat-last-msg');
+            if (preview) {
+                preview.innerText = (isMine ? "Вы: " : "") + msg.text;
+            }
+        }
+    });
+}
 
     // ГЛАВНЫЙ СЛУШАТЕЛЬ ВХОДА (Та самая "коробка")
     onAuthStateChanged(auth, (user) => {
