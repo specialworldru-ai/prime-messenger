@@ -87,3 +87,33 @@ body {
 /* Скролл */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-thumb { background: rgba(138, 43, 226, 0.3); border-radius: 10px; }
+
+/* Стили для новых полей профиля */
+#prof-tag {
+    font-family: 'Courier New', monospace;
+    background: rgba(138, 43, 226, 0.1);
+    padding: 5px 10px;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.msg-sender {
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: #b388ff;
+}
+
+.mine .msg-sender {
+    color: #e1d5ff;
+    text-align: right;
+}
+
+/* Улучшение поиска */
+.search-item b {
+    color: #8a2be2;
+}
+
+.search-item small {
+    color: rgba(255,255,255,0.5);
+}

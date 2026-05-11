@@ -14,7 +14,8 @@
 
         <div id="auth-form" class="auth-form" style="display: none;">
             <h2 id="auth-title">Регистрация</h2>
-            <input type="text" id="reg-username" placeholder="Юзернейм (@name)">
+            <input type="text" id="reg-nickname" placeholder="Никнейм (Отображаемое имя)">
+            <input type="text" id="reg-username" placeholder="Юзернейм (@tag)">
             <input type="email" id="email" placeholder="Почта">
             <input type="password" id="password" placeholder="Пароль">
             <button id="auth-action-btn" class="status-btn">Создать аккаунт</button>
@@ -27,7 +28,7 @@
             <div class="sidebar-header">PRIME</div>
             
             <div class="search-container">
-                <input type="text" id="global-search" placeholder="Поиск #канала...">
+                <input type="text" id="global-search" placeholder="Поиск #канала или @юзера...">
                 <div id="search-results-bubble" class="search-bubble" style="display: none;"></div>
             </div>
 
@@ -48,7 +49,7 @@
                 <div class="chat-avatar" id="user-avatar-mini" style="background: #8a2be2;">?</div>
                 <div class="chat-info">
                     <div class="chat-name" id="user-name-mini">Загрузка...</div>
-                    <div style="font-size: 10px; color: rgba(255,255,255,0.5);">Настройки профиля</div>
+                    <div id="user-tag-mini" style="font-size: 10px; color: rgba(255,255,255,0.5);">@...</div>
                 </div>
             </div>
         </div>
@@ -66,22 +67,11 @@
         </div>
     </div>
 
-    <div id="comments-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="width: 400px; height: 500px; display: flex; flex-direction: column;">
-            <h3>Комментарии</h3>
-            <div id="comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 10px; text-align: left;"></div>
-            <div style="display: flex; gap: 5px;">
-                <input type="text" id="comm-input" placeholder="Ваш коммент...">
-                <button id="send-comm-btn" class="status-btn">></button>
-            </div>
-            <button id="close-comments" style="margin-top: 10px; color: #777; cursor: pointer; border: none; background: none;">Закрыть</button>
-        </div>
-    </div>
-
     <div id="settings-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="chat-avatar" id="prof-avatar" style="width: 70px; height: 70px; margin: 0 auto 10px; font-size: 24px;">?</div>
-            <input type="text" id="edit-username" placeholder="Изменить имя">
+            <p id="prof-tag" style="color: #8a2be2; font-weight: bold; margin-bottom: 15px;"></p>
+            <input type="text" id="edit-nickname" placeholder="Новый никнейм">
             <textarea id="edit-bio" placeholder="О себе"></textarea>
             <div style="display: flex; gap: 10px;">
                 <button id="save-prof-btn" class="status-btn" style="flex: 1;">Сохранить</button>
@@ -95,7 +85,7 @@
         <div class="modal-content">
             <h3>Новый канал</h3>
             <input type="text" id="new-chan-name" placeholder="Название">
-            <input type="text" id="new-chan-slug" placeholder="Слаг (без #, например: news)">
+            <input type="text" id="new-chan-slug" placeholder="Слаг (например: news)">
             <button id="confirm-chan-btn" class="status-btn" style="width: 100%;">Создать</button>
             <button id="close-chan" style="margin-top: 10px; background: none; border: none; color: #888; cursor: pointer;">Отмена</button>
         </div>
@@ -118,41 +108,86 @@
         const db = getDatabase(app);
 
         let currentUser = null;
-        let userData = { username: "Аноним" };
+        let userData = {};
         let currentChat = 'global';
-        let activePostId = null;
 
-        const messagesArea = document.getElementById('messages');
         const searchBubble = document.getElementById('search-results-bubble');
         const dynamicList = document.getElementById('dynamic-channels-list');
+        const messagesArea = document.getElementById('messages');
 
-        // --- ЛОГИКА ОТОБРАЖЕНИЯ КАНАЛОВ ---
-
-        function addChannelToSidebar(id, data) {
-            if (document.getElementById(`side-item-${id}`)) return;
-            const div = document.createElement('div');
-            div.className = 'chat-item';
-            div.id = `side-item-${id}`;
-            div.innerHTML = `<div class="chat-avatar" style="background:#8a2be2">#</div><div class="chat-info"><div class="chat-name">${data.name}</div></div>`;
-            div.onclick = () => {
-                document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-                div.classList.add('active');
-                document.getElementById('chat-title-top').innerText = "# " + data.name;
-                loadChat(id, true);
-            };
-            dynamicList.appendChild(div);
+        // --- ЛОГИКА ПРОФИЛЯ ---
+        async function updateProfileUI(data) {
+            document.getElementById('user-name-mini').innerText = data.nickname || "Без имени";
+            document.getElementById('user-tag-mini').innerText = "@" + data.username;
+            document.getElementById('user-avatar-mini').innerText = (data.nickname || "U")[0].toUpperCase();
+            document.getElementById('prof-avatar').innerText = (data.nickname || "U")[0].toUpperCase();
+            document.getElementById('prof-tag').innerText = "@" + data.username;
+            document.getElementById('edit-nickname').value = data.nickname || "";
+            document.getElementById('edit-bio').value = data.bio || "";
         }
 
-        async function loadMyChannels() {
-            const q = query(ref(db, 'channels'), orderByChild('owner'), equalTo(currentUser.uid));
-            const snap = await get(q);
-            if (snap.exists()) {
-                Object.entries(snap.val()).forEach(([id, data]) => addChannelToSidebar(id, data));
+        document.getElementById('save-prof-btn').onclick = async () => {
+            const newNick = document.getElementById('edit-nickname').value.trim();
+            const newBio = document.getElementById('edit-bio').value.trim();
+            if(newNick) {
+                await update(ref(db, `users/${currentUser.uid}`), { nickname: newNick, bio: newBio });
+                userData.nickname = newNick;
+                userData.bio = newBio;
+                updateProfileUI(userData);
+                alert("Профиль обновлен!");
+                document.getElementById('settings-modal').style.display = 'none';
             }
+        };
+
+        // --- ПОИСК (КАНАЛЫ + ЛЮДИ) ---
+        document.getElementById('global-search').oninput = async (e) => {
+            const val = e.target.value.toLowerCase().trim().replace('#', '').replace('@', '');
+            if(val.length < 2) { searchBubble.style.display = 'none'; return; }
+
+            searchBubble.innerHTML = '';
+            let found = false;
+
+            // Ищем каналы
+            const chanSnap = await get(ref(db, 'channels'));
+            if (chanSnap.exists()) {
+                Object.entries(chanSnap.val()).forEach(([id, chan]) => {
+                    if (chan.slug.includes(val) || chan.name.toLowerCase().includes(val)) {
+                        found = true;
+                        createSearchItem(`#${chan.slug}`, chan.name, () => openChat(id, "# " + chan.name, true));
+                    }
+                });
+            }
+
+            // Ищем людей
+            const userSnap = await get(ref(db, 'users'));
+            if (userSnap.exists()) {
+                Object.entries(userSnap.val()).forEach(([uid, user]) => {
+                    if (uid !== currentUser.uid && (user.username.includes(val) || user.nickname.toLowerCase().includes(val))) {
+                        found = true;
+                        createSearchItem(`@${user.username}`, user.nickname, () => {
+                            const dmId = [currentUser.uid, uid].sort().join('_');
+                            openChat(dmId, "Чат с " + user.nickname, false);
+                        });
+                    }
+                });
+            }
+            searchBubble.style.display = found ? 'block' : 'none';
+        };
+
+        function createSearchItem(title, sub, callback) {
+            const item = document.createElement('div');
+            item.className = 'search-item';
+            item.innerHTML = `<b>${title}</b><br><small>${sub}</small>`;
+            item.onclick = () => { callback(); searchBubble.style.display = 'none'; document.getElementById('global-search').value = ''; };
+            searchBubble.appendChild(item);
         }
 
-        // --- ЧАТ И СООБЩЕНИЯ ---
+        function openChat(id, title, isChannel) {
+            document.getElementById('chat-title-top').innerText = title;
+            loadChat(id, isChannel);
+        }
 
+        // --- ОСТАЛЬНАЯ ЛОГИКА (AUTH, CHAT) ---
         function loadChat(chatId, isChannel = false) {
             currentChat = chatId;
             messagesArea.innerHTML = '';
@@ -161,111 +196,61 @@
                 const m = snap.val();
                 const div = document.createElement('div');
                 div.className = m.uid === currentUser.uid ? 'msg mine' : 'msg';
-                const commBtn = isChannel ? `<div class="comm-trigger" onclick="window.openComments('${chatId}', '${snap.key}')">💬 Ответить</div>` : '';
-                div.innerHTML = `<div class="msg-sender">${m.username}</div><div class="msg-text">${m.text}</div>${commBtn}`;
+                div.innerHTML = `<div class="msg-sender">${m.nickname || m.username}</div><div class="msg-text">${m.text}</div>`;
                 messagesArea.appendChild(div);
                 messagesArea.scrollTop = messagesArea.scrollHeight;
             });
         }
 
-        // --- ПОИСК (ОБЛАЧКО) ---
-
-        document.getElementById('global-search').oninput = async (e) => {
-            const val = e.target.value.toLowerCase().trim().replace('#', '');
-            if(val.length < 2) { searchBubble.style.display = 'none'; return; }
-
-            const snap = await get(ref(db, 'channels'));
-            searchBubble.innerHTML = '';
-            let found = false;
-
-            if (snap.exists()) {
-                Object.entries(snap.val()).forEach(([id, chan]) => {
-                    if (chan.slug.includes(val) || chan.name.toLowerCase().includes(val)) {
-                        found = true;
-                        const item = document.createElement('div');
-                        item.className = 'search-item';
-                        item.innerHTML = `<b>#${chan.slug}</b><br><small>${chan.name}</small>`;
-                        item.onclick = () => {
-                            addChannelToSidebar(id, chan);
-                            document.getElementById('chat-title-top').innerText = "# " + chan.name;
-                            loadChat(id, true);
-                            searchBubble.style.display = 'none';
-                            e.target.value = '';
-                        };
-                        searchBubble.appendChild(item);
-                    }
+        document.getElementById('send-btn').onclick = () => {
+            const t = document.getElementById('msg-input').value.trim();
+            if(t && currentUser) {
+                push(ref(db, `messages/${currentChat}`), { 
+                    uid: currentUser.uid, 
+                    username: userData.username, 
+                    nickname: userData.nickname, 
+                    text: t 
                 });
+                document.getElementById('msg-input').value = '';
             }
-            searchBubble.style.display = found ? 'block' : 'none';
         };
-
-        // --- AUTH И ПРОЧЕЕ ---
 
         onAuthStateChanged(auth, async (user) => {
             if(user) {
                 currentUser = user;
                 const snap = await get(ref(db, `users/${user.uid}`));
-                userData = snap.val() || { username: "User" };
-                document.getElementById('user-name-mini').innerText = userData.username;
-                document.getElementById('user-avatar-mini').innerText = userData.username[0].toUpperCase();
+                userData = snap.val() || {};
+                updateProfileUI(userData);
                 document.getElementById('messenger-app').style.display = 'flex';
                 document.getElementById('main-screen').style.display = 'none';
                 loadChat('global');
-                loadMyChannels();
             } else {
-                document.getElementById('messenger-app').style.display = 'none';
                 document.getElementById('main-screen').style.display = 'flex';
             }
         });
 
-        // Кнопки отправки, переключения логина и т.д. (оставлены как в твоем конфиге)
-        document.getElementById('send-btn').onclick = () => {
-            const t = document.getElementById('msg-input').value.trim();
-            if(t && currentUser) {
-                push(ref(db, `messages/${currentChat}`), { uid: currentUser.uid, username: userData.username, text: t });
-                document.getElementById('msg-input').value = '';
-            }
-        };
-
-        let isLogin = false;
-        document.getElementById('switch-auth').onclick = () => {
-            isLogin = !isLogin;
-            document.getElementById('auth-title').innerText = isLogin ? "Вход" : "Регистрация";
-            document.getElementById('reg-username').style.display = isLogin ? "none" : "block";
-            document.getElementById('auth-action-btn').innerText = isLogin ? "Войти" : "Создать аккаунт";
-        };
-
         document.getElementById('auth-action-btn').onclick = async () => {
             const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value;
-            const name = document.getElementById('reg-username').value.trim();
+            const userTag = document.getElementById('reg-username').value.trim().toLowerCase();
+            const nick = document.getElementById('reg-nickname').value.trim();
+            
             try {
-                if(!isLogin) {
+                if(document.getElementById('auth-title').innerText === "Регистрация") {
                     const res = await createUserWithEmailAndPassword(auth, email, pass);
-                    await set(ref(db, `users/${res.user.uid}`), { username: name, bio: "Hi!", email: email });
-                } else { await signInWithEmailAndPassword(auth, email, pass); }
+                    await set(ref(db, `users/${res.user.uid}`), { username: userTag, nickname: nick, bio: "Всем привет!", email: email });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
             } catch(e) { alert(e.message); }
         };
 
-        // Интерфейсные кнопки
-        document.getElementById('btn-global').onclick = () => { 
-            document.getElementById('chat-title-top').innerText = "Общий чат";
-            document.getElementById('create-chan-btn').style.display = 'none';
-            loadChat('global'); 
-        };
-        document.getElementById('btn-channels').onclick = () => {
-            document.getElementById('create-chan-btn').style.display = 'block';
-            messagesArea.innerHTML = '<p style="text-align:center; opacity:0.3; margin-top:50px;">Ваши каналы загружены в список слева</p>';
-        };
-        document.getElementById('create-chan-btn').onclick = () => document.getElementById('chan-modal').style.display = 'flex';
-        document.getElementById('confirm-chan-btn').onclick = async () => {
-            const name = document.getElementById('new-chan-name').value;
-            const slug = document.getElementById('new-chan-slug').value.toLowerCase();
-            const newRef = push(ref(db, 'channels'));
-            const data = { name, slug, owner: currentUser.uid };
-            await set(newRef, data);
-            addChannelToSidebar(newRef.key, data);
-            document.getElementById('chan-modal').style.display = 'none';
+        // Кнопки интерфейса
+        document.getElementById('switch-auth').onclick = () => {
+            const isReg = document.getElementById('auth-title').innerText === "Регистрация";
+            document.getElementById('auth-title').innerText = isReg ? "Вход" : "Регистрация";
+            document.getElementById('reg-username').style.display = isReg ? "none" : "block";
+            document.getElementById('reg-nickname').style.display = isReg ? "none" : "block";
         };
         document.getElementById('show-reg-btn').onclick = () => {
             document.getElementById('show-reg-btn').style.display = 'none';
@@ -273,23 +258,7 @@
         };
         document.getElementById('open-settings').onclick = () => document.getElementById('settings-modal').style.display = 'flex';
         document.getElementById('close-settings').onclick = () => document.getElementById('settings-modal').style.display = 'none';
-        document.getElementById('close-chan').onclick = () => document.getElementById('chan-modal').style.display = 'none';
         document.getElementById('logout-btn').onclick = () => signOut(auth).then(()=>location.reload());
-        
-        // Глобальные ссылки для функций из HTML
-        window.openComments = async (chatId, msgId) => {
-            activePostId = msgId;
-            document.getElementById('comments-modal').style.display = 'flex';
-            const list = document.getElementById('comments-list');
-            list.innerHTML = 'Загрузка...';
-            off(ref(db, `comments/${msgId}`));
-            onChildAdded(ref(db, `comments/${msgId}`), (snap) => {
-                if(list.innerText === 'Загрузка...') list.innerHTML = '';
-                const c = snap.val();
-                list.innerHTML += `<div style="margin-bottom:8px; font-size:13px;"><b style="color:#8a2be2;">${c.username}:</b> ${c.text}</div>`;
-            });
-        };
-        document.getElementById('close-comments').onclick = () => document.getElementById('comments-modal').style.display = 'none';
     </script>
 </body>
 </html>
