@@ -12,16 +12,18 @@
         <h1>PRIME</h1>
         <button id="show-reg-btn" class="status-btn">Зарегистрироваться</button>
 
-        <div id="auth-form" class="auth-container" style="display: none;">
-            <h2 id="auth-title">Регистрация</h2>
-            <input type="email" id="email" placeholder="Почта" class="input-prime">
-            <input type="password" id="password" placeholder="Пароль" class="input-prime">
-            <button id="auth-action-btn" class="status-btn">Создать аккаунт</button>
-            <p id="toggle-auth" style="cursor:pointer; font-size: 12px; margin-top: 15px; color: #888;">
-                Уже есть аккаунт? <span style="color: #007aff;">Войти</span>
-            </p>
-        </div>
-    </div>
+        <div id="auth-form" class="auth-form" style="display: none;">
+    <h2 id="auth-title" style="margin: 0; text-align: center;">Регистрация</h2>
+    
+    <input type="email" id="email" placeholder="Почта">
+    <input type="password" id="password" placeholder="Пароль">
+    
+    <button id="auth-action-btn" class="status-btn">Создать аккаунт</button>
+    
+    <p style="margin: 0; text-align: center; font-size: 14px;">
+        Уже есть аккаунт? <span id="switch-auth" style="color: #8a2be2; cursor: pointer; font-weight: bold;">Войти</span>
+    </p>
+</div>
 
     <div id="messenger-app" class="messenger-container" style="display: none;">
         <aside class="sidebar">
@@ -222,7 +224,20 @@
         signInWithEmailAndPassword(auth, email, pass).catch(() => {
             createUserWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
         });
-    };
+    };  
+const switchAuth = document.getElementById('switch-auth');
+const authTitle = document.getElementById('auth-title');
+const authBtn = document.getElementById('auth-action-btn');
+
+let isLogin = false;
+
+switchAuth.onclick = () => {
+    isLogin = !isLogin;
+    authTitle.innerText = isLogin ? "Вход" : "Регистрация";
+    authBtn.innerText = isLogin ? "Войти" : "Создать аккаунт";
+    switchAuth.innerText = isLogin ? "Зарегистрироваться" : "Войти";
+    document.querySelector('.auth-form p').firstChild.textContent = isLogin ? "Нет аккаунта? " : "Уже есть аккаунт? ";
+};
 </script>
 </body>
 </html>
