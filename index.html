@@ -87,7 +87,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
-
+        
         const mainScreen = document.querySelector('.main');
         const messengerApp = document.getElementById('messenger-app');
         const authForm = document.getElementById('auth-form');
@@ -98,6 +98,13 @@
         const msgInput = document.getElementById('msg-input');
         const sendBtn = document.getElementById('send-btn');
         const messagesArea = document.getElementById('messages');
+
+        // --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ЛОГИКИ ЧАТОВ ---
+        const chatHeader = document.querySelector('.chat-header');
+        const chatItems = document.querySelectorAll('.chat-item'); // Все кнопки чатов слева
+        let currentChat = 'global'; // Какой чат открыт сейчас: 'global' или 'notes'
+        let currentUser = null;     // Тут храним данные вошедшего юзера
+        let isLoginMode = false;    // Режим входа или регистрации
 
         let currentUser = null;
         let isLoginMode = false;
@@ -140,39 +147,76 @@
         };
 
         sendBtn.onclick = () => {
-            const text = msgInput.value.trim();
-            if (text && currentUser) {
-                push(ref(db, 'messages/'), {
-                    email: currentUser.email,
-                    text: text,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                });
-                msgInput.value = "";
-            }
-        };
+           const text = msgInput.value.trim();
+           if (!text || !currentUser) return;
+
+    // Определяем путь: messages/ для всех или notes/UID для себя
+    const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
+    
+    push(ref(db, path), {
+        email: currentUser.email,
+        text: text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
+    
+    msgInput.value = "";
+};
 
         msgInput.onkeydown = (e) => { if(e.key === 'Enter') sendBtn.click(); };
 
         // Прием сообщений
-        onChildAdded(ref(db, 'messages/'), (data) => {
-            const msg = data.val();
-            if (!currentUser) return; // Ждем пока юзер залогинится
+        function loadMessages() {
+    const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
+    
+    // Слушаем только ту папку, которая выбрана
+    onChildAdded(ref(db, path), (data) => {
+        const msg = data.val();
+        const isMine = msg.email === currentUser.email;
+        
+        const msgDiv = document.createElement('div');
+        msgDiv.className = isMine ? 'msg mine' : 'msg';
+        msgDiv.innerHTML = `
+            <div class="msg-sender">${currentChat === 'global' ? msg.email.split('@')[0] : 'Заметка'}</div>
+            <div class="msg-text">${msg.text}</div>
+        `;
+        messagesArea.appendChild(msgDiv);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    });
+}
 
-            const isMine = msg.email === currentUser.email;
-            const msgDiv = document.createElement('div');
-            msgDiv.className = isMine ? 'msg mine' : 'msg';
-            msgDiv.innerHTML = `
-                <div class="msg-sender">${msg.email.split('@')[0]}</div>
-                <div class="msg-text">${msg.text}</div>
-            `;
-            messagesArea.appendChild(msgDiv);
-            messagesArea.scrollTop = messagesArea.scrollHeight;
-
-            const preview = document.querySelector('.chat-item.active .chat-last-msg');
-            if (preview) {
-                preview.innerText = (isMine ? "Вы: " : "") + msg.text;
-            }
-        });
+// Запускаем загрузку при старте (когда юзер вошел)
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUser = user;
+        mainScreen.style.display = 'none';
+        messengerApp.style.display = 'flex';
+        loadMessages(); // Загружаем сообщения при входе
+    } else {
+        mainScreen.style.display = 'flex';
+        messengerApp.style.display = 'none';
+    }
+});
     </script>
+chatItems.forEach(item => {
+    item.onclick = () => {
+        // Убираем активный класс у всех и даем тому, на кого нажали
+        chatItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+
+        // Меняем заголовок и текущий чат
+        const name = item.querySelector('.chat-name').innerText;
+        chatHeader.innerText = name;
+        
+        if (name === 'Заметки') {
+            currentChat = 'notes';
+        } else if (name === 'Общий чат') {
+            currentChat = 'global';
+        }
+
+        // Очищаем окно сообщений перед загрузкой новых
+        messagesArea.innerHTML = '';
+        loadMessages(); // Эту функцию напишем сейчас
+    };
+});
 </body>
 </html>
