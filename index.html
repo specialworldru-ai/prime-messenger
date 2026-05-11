@@ -10,16 +10,13 @@
     <div class="main">
         <p class="tagline">PREMIUM MESSENGER</p>
         <h1>PRIME</h1>
-        
         <button id="show-reg-btn" class="status-btn">Зарегистрироваться</button>
 
         <div id="auth-form" class="auth-container" style="display: none;">
             <h2 id="auth-title">Регистрация</h2>
             <input type="email" id="email" placeholder="Почта" class="input-prime">
             <input type="password" id="password" placeholder="Пароль" class="input-prime">
-            
             <button id="auth-action-btn" class="status-btn">Создать аккаунт</button>
-            
             <p id="toggle-auth" style="cursor:pointer; font-size: 12px; margin-top: 15px; color: #888;">
                 Уже есть аккаунт? <span style="color: #007aff;">Войти</span>
             </p>
@@ -30,34 +27,22 @@
         <aside class="sidebar">
             <div class="sidebar-header">PRIME</div>
             <div class="chats-list">
-                
-                <div class="chat-item active">
+                <div class="chat-item active" data-type="global">
                     <div class="chat-avatar">G</div>
                     <div class="chat-info">
                         <div class="chat-name">Общий чат</div>
-                        <div class="chat-last-msg">Загрузка сообщений...</div>
+                        <div class="chat-last-msg">Загрузка...</div>
                     </div>
                 </div>
-
-                <div class="chat-item">
+                <div class="chat-item" data-type="notes">
                     <div class="chat-avatar notes">Saved</div>
                     <div class="chat-info">
                         <div class="chat-name">Заметки</div>
                         <div class="chat-last-msg">Личное пространство</div>
                     </div>
                 </div>
-
-                <div class="chat-item">
-                    <div class="chat-avatar">S</div>
-                    <div class="chat-info">
-                        <div class="chat-name">Support</div>
-                        <div class="chat-last-msg">Бот поддержки PRIME</div>
-                    </div>
-                </div>
-
             </div>
         </aside>
-
         <main class="chat-window">
             <div class="chat-header">Общий чат</div>
             <div id="messages" class="messages-area"></div>
@@ -71,7 +56,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, push, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDmhhGZ-yS5Q8RvYVeKObnj3JlANVzPG6M",
@@ -80,143 +65,94 @@
             storageBucket: "primemessenger-73933.firebasestorage.app",
             messagingSenderId: "129908663923",
             appId: "1:129908663923:web:1341089b3acd29439cac06",
-            measurementId: "G-2PH3N5Q2N7", // Тут добавлена запятая!
+            measurementId: "G-2PH3N5Q2N7",
             databaseURL: "https://primemessenger-73933-default-rtdb.europe-west1.firebasedatabase.app"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
-        
+
         const mainScreen = document.querySelector('.main');
         const messengerApp = document.getElementById('messenger-app');
-        const authForm = document.getElementById('auth-form');
-        const showBtn = document.getElementById('show-reg-btn');
-        const authTitle = document.getElementById('auth-title');
-        const authActionBtn = document.getElementById('auth-action-btn');
-        const toggleAuth = document.getElementById('toggle-auth');
+        const chatHeader = document.querySelector('.chat-header');
+        const chatItems = document.querySelectorAll('.chat-item');
+        const messagesArea = document.getElementById('messages');
         const msgInput = document.getElementById('msg-input');
         const sendBtn = document.getElementById('send-btn');
-        const messagesArea = document.getElementById('messages');
-
-        // --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ЛОГИКИ ЧАТОВ ---
-        const chatHeader = document.querySelector('.chat-header');
-        const chatItems = document.querySelectorAll('.chat-item'); // Все кнопки чатов слева
-        let currentChat = 'global'; // Какой чат открыт сейчас: 'global' или 'notes'
-        let currentUser = null;     // Тут храним данные вошедшего юзера
-        let isLoginMode = false;    // Режим входа или регистрации
 
         let currentUser = null;
-        let isLoginMode = false;
+        let currentChat = 'global';
+
+        // Функция загрузки сообщений
+        function loadMessages() {
+            messagesArea.innerHTML = '';
+            const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
+            
+            // Сначала отключаем старые прослушки, чтобы сообщения не дублировались
+            off(ref(db, 'messages/'));
+            if(currentUser) off(ref(db, `notes/${currentUser.uid}/`));
+
+            onChildAdded(ref(db, path), (data) => {
+                const msg = data.val();
+                const isMine = msg.email === currentUser.email;
+                const msgDiv = document.createElement('div');
+                msgDiv.className = isMine ? 'msg mine' : 'msg';
+                msgDiv.innerHTML = `<div class="msg-sender">${currentChat === 'global' ? msg.email.split('@')[0] : 'Заметка'}</div><div class="msg-text">${msg.text}</div>`;
+                messagesArea.appendChild(msgDiv);
+                messagesArea.scrollTop = messagesArea.scrollHeight;
+            });
+        }
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 mainScreen.style.display = 'none';
                 messengerApp.style.display = 'flex';
+                loadMessages();
             } else {
                 mainScreen.style.display = 'flex';
                 messengerApp.style.display = 'none';
             }
         });
 
-        showBtn.onclick = () => {
-            showBtn.style.display = 'none';
-            authForm.style.display = 'flex';
-        };
+        chatItems.forEach(item => {
+            item.onclick = () => {
+                chatItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                const name = item.querySelector('.chat-name').innerText;
+                chatHeader.innerText = name;
+                currentChat = (name === 'Заметки') ? 'notes' : 'global';
+                loadMessages();
+            };
+        });
 
-        toggleAuth.onclick = () => {
-            isLoginMode = !isLoginMode;
-            authTitle.innerText = isLoginMode ? "Вход" : "Регистрация";
-            authActionBtn.innerText = isLoginMode ? "Войти" : "Создать аккаунт";
-            toggleAuth.innerHTML = isLoginMode ? 
-                'Нет аккаунта? <span style="color: #007aff;">Создать</span>' : 
-                'Уже есть аккаунт? <span style="color: #007aff;">Войти</span>';
-        };
-
-        authActionBtn.onclick = () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            if (!email || !pass) return alert("Заполни поля!");
-
-            if (isLoginMode) {
-                signInWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
-            } else {
-                createUserWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+        sendBtn.onclick = () => {
+            const text = msgInput.value.trim();
+            if (text && currentUser) {
+                const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
+                push(ref(db, path), {
+                    email: currentUser.email,
+                    text: text,
+                    time: new Date().toLocaleTimeString()
+                });
+                msgInput.value = "";
             }
         };
 
-        sendBtn.onclick = () => {
-           const text = msgInput.value.trim();
-           if (!text || !currentUser) return;
+        // Логика кнопок входа (показать форму и т.д.)
+        document.getElementById('show-reg-btn').onclick = () => {
+            document.getElementById('show-reg-btn').style.display = 'none';
+            document.getElementById('auth-form').style.display = 'flex';
+        };
 
-    // Определяем путь: messages/ для всех или notes/UID для себя
-    const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-    
-    push(ref(db, path), {
-        email: currentUser.email,
-        text: text,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
-    
-    msgInput.value = "";
-};
-
-        msgInput.onkeydown = (e) => { if(e.key === 'Enter') sendBtn.click(); };
-
-        // Прием сообщений
-        function loadMessages() {
-    const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-    
-    // Слушаем только ту папку, которая выбрана
-    onChildAdded(ref(db, path), (data) => {
-        const msg = data.val();
-        const isMine = msg.email === currentUser.email;
-        
-        const msgDiv = document.createElement('div');
-        msgDiv.className = isMine ? 'msg mine' : 'msg';
-        msgDiv.innerHTML = `
-            <div class="msg-sender">${currentChat === 'global' ? msg.email.split('@')[0] : 'Заметка'}</div>
-            <div class="msg-text">${msg.text}</div>
-        `;
-        messagesArea.appendChild(msgDiv);
-        messagesArea.scrollTop = messagesArea.scrollHeight;
-    });
-}
-
-// Запускаем загрузку при старте (когда юзер вошел)
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUser = user;
-        mainScreen.style.display = 'none';
-        messengerApp.style.display = 'flex';
-        loadMessages(); // Загружаем сообщения при входе
-    } else {
-        mainScreen.style.display = 'flex';
-        messengerApp.style.display = 'none';
-    }
-});
+        document.getElementById('auth-action-btn').onclick = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            signInWithEmailAndPassword(auth, email, pass).catch(() => {
+                createUserWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+            });
+        };
     </script>
-chatItems.forEach(item => {
-    item.onclick = () => {
-        // Убираем активный класс у всех и даем тому, на кого нажали
-        chatItems.forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-
-        // Меняем заголовок и текущий чат
-        const name = item.querySelector('.chat-name').innerText;
-        chatHeader.innerText = name;
-        
-        if (name === 'Заметки') {
-            currentChat = 'notes';
-        } else if (name === 'Общий чат') {
-            currentChat = 'global';
-        }
-
-        // Очищаем окно сообщений перед загрузкой новых
-        messagesArea.innerHTML = '';
-        loadMessages(); // Эту функцию напишем сейчас
-    };
-});
 </body>
 </html>
