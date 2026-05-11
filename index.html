@@ -26,9 +26,8 @@
         <div class="sidebar">
             <div class="sidebar-header">PRIME</div>
             
-            <div class="search-container" style="padding: 0 10px 10px; position: relative;">
-                <input type="text" id="global-search" placeholder="Поиск #канала..." 
-                       style="width: 100%; padding: 8px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(138,43,226,0.3); color: white; font-size: 12px;">
+            <div class="search-container">
+                <input type="text" id="global-search" placeholder="Поиск #канала...">
                 <div id="search-results-bubble" class="search-bubble" style="display: none;"></div>
             </div>
 
@@ -41,7 +40,7 @@
                     <div class="chat-avatar" style="background: #ff8c00;">#</div>
                     <div class="chat-info"><div class="chat-name">Мои Каналы</div></div>
                 </div>
-                <hr style="border: 0.5px solid rgba(255,255,255,0.1); width: 80%;">
+                <hr style="border: 0.5px solid rgba(255,255,255,0.1); width: 80%; margin: 10px auto;">
                 <div id="dynamic-channels-list"></div>
             </div>
 
@@ -69,21 +68,21 @@
 
     <div id="comments-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content" style="width: 400px; height: 500px; display: flex; flex-direction: column;">
-            <h3 style="margin-bottom: 10px;">Комментарии</h3>
+            <h3>Комментарии</h3>
             <div id="comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 10px; text-align: left;"></div>
             <div style="display: flex; gap: 5px;">
-                <input type="text" id="comm-input" placeholder="Ваш коммент..." style="flex: 1; padding: 8px; border-radius: 5px;">
-                <button id="send-comm-btn" class="status-btn" style="padding: 5px 10px;">></button>
+                <input type="text" id="comm-input" placeholder="Ваш коммент...">
+                <button id="send-comm-btn" class="status-btn">></button>
             </div>
             <button id="close-comments" style="margin-top: 10px; color: #777; cursor: pointer; border: none; background: none;">Закрыть</button>
         </div>
     </div>
 
     <div id="settings-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="width: 350px;">
+        <div class="modal-content">
             <div class="chat-avatar" id="prof-avatar" style="width: 70px; height: 70px; margin: 0 auto 10px; font-size: 24px;">?</div>
             <input type="text" id="edit-username" placeholder="Изменить имя">
-            <textarea id="edit-bio" placeholder="О себе" style="width: 100%; height: 60px; background: #000; color: #fff; margin-bottom: 10px; border-radius: 8px;"></textarea>
+            <textarea id="edit-bio" placeholder="О себе"></textarea>
             <div style="display: flex; gap: 10px;">
                 <button id="save-prof-btn" class="status-btn" style="flex: 1;">Сохранить</button>
                 <button id="logout-btn" class="status-btn" style="background: #ff4b4b;">Выйти</button>
@@ -121,12 +120,113 @@
         let currentUser = null;
         let userData = { username: "Аноним" };
         let currentChat = 'global';
-        let activePostId = null; // Для комментов
+        let activePostId = null;
 
         const messagesArea = document.getElementById('messages');
         const searchBubble = document.getElementById('search-results-bubble');
+        const dynamicList = document.getElementById('dynamic-channels-list');
 
-        // Смена входа
+        // --- ЛОГИКА ОТОБРАЖЕНИЯ КАНАЛОВ ---
+
+        function addChannelToSidebar(id, data) {
+            if (document.getElementById(`side-item-${id}`)) return;
+            const div = document.createElement('div');
+            div.className = 'chat-item';
+            div.id = `side-item-${id}`;
+            div.innerHTML = `<div class="chat-avatar" style="background:#8a2be2">#</div><div class="chat-info"><div class="chat-name">${data.name}</div></div>`;
+            div.onclick = () => {
+                document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
+                div.classList.add('active');
+                document.getElementById('chat-title-top').innerText = "# " + data.name;
+                loadChat(id, true);
+            };
+            dynamicList.appendChild(div);
+        }
+
+        async function loadMyChannels() {
+            const q = query(ref(db, 'channels'), orderByChild('owner'), equalTo(currentUser.uid));
+            const snap = await get(q);
+            if (snap.exists()) {
+                Object.entries(snap.val()).forEach(([id, data]) => addChannelToSidebar(id, data));
+            }
+        }
+
+        // --- ЧАТ И СООБЩЕНИЯ ---
+
+        function loadChat(chatId, isChannel = false) {
+            currentChat = chatId;
+            messagesArea.innerHTML = '';
+            off(ref(db, `messages/${chatId}`));
+            onChildAdded(ref(db, `messages/${chatId}`), (snap) => {
+                const m = snap.val();
+                const div = document.createElement('div');
+                div.className = m.uid === currentUser.uid ? 'msg mine' : 'msg';
+                const commBtn = isChannel ? `<div class="comm-trigger" onclick="window.openComments('${chatId}', '${snap.key}')">💬 Ответить</div>` : '';
+                div.innerHTML = `<div class="msg-sender">${m.username}</div><div class="msg-text">${m.text}</div>${commBtn}`;
+                messagesArea.appendChild(div);
+                messagesArea.scrollTop = messagesArea.scrollHeight;
+            });
+        }
+
+        // --- ПОИСК (ОБЛАЧКО) ---
+
+        document.getElementById('global-search').oninput = async (e) => {
+            const val = e.target.value.toLowerCase().trim().replace('#', '');
+            if(val.length < 2) { searchBubble.style.display = 'none'; return; }
+
+            const snap = await get(ref(db, 'channels'));
+            searchBubble.innerHTML = '';
+            let found = false;
+
+            if (snap.exists()) {
+                Object.entries(snap.val()).forEach(([id, chan]) => {
+                    if (chan.slug.includes(val) || chan.name.toLowerCase().includes(val)) {
+                        found = true;
+                        const item = document.createElement('div');
+                        item.className = 'search-item';
+                        item.innerHTML = `<b>#${chan.slug}</b><br><small>${chan.name}</small>`;
+                        item.onclick = () => {
+                            addChannelToSidebar(id, chan);
+                            document.getElementById('chat-title-top').innerText = "# " + chan.name;
+                            loadChat(id, true);
+                            searchBubble.style.display = 'none';
+                            e.target.value = '';
+                        };
+                        searchBubble.appendChild(item);
+                    }
+                });
+            }
+            searchBubble.style.display = found ? 'block' : 'none';
+        };
+
+        // --- AUTH И ПРОЧЕЕ ---
+
+        onAuthStateChanged(auth, async (user) => {
+            if(user) {
+                currentUser = user;
+                const snap = await get(ref(db, `users/${user.uid}`));
+                userData = snap.val() || { username: "User" };
+                document.getElementById('user-name-mini').innerText = userData.username;
+                document.getElementById('user-avatar-mini').innerText = userData.username[0].toUpperCase();
+                document.getElementById('messenger-app').style.display = 'flex';
+                document.getElementById('main-screen').style.display = 'none';
+                loadChat('global');
+                loadMyChannels();
+            } else {
+                document.getElementById('messenger-app').style.display = 'none';
+                document.getElementById('main-screen').style.display = 'flex';
+            }
+        });
+
+        // Кнопки отправки, переключения логина и т.д. (оставлены как в твоем конфиге)
+        document.getElementById('send-btn').onclick = () => {
+            const t = document.getElementById('msg-input').value.trim();
+            if(t && currentUser) {
+                push(ref(db, `messages/${currentChat}`), { uid: currentUser.uid, username: userData.username, text: t });
+                document.getElementById('msg-input').value = '';
+            }
+        };
+
         let isLogin = false;
         document.getElementById('switch-auth').onclick = () => {
             isLogin = !isLogin;
@@ -135,56 +235,53 @@
             document.getElementById('auth-action-btn').innerText = isLogin ? "Войти" : "Создать аккаунт";
         };
 
-        document.getElementById('show-reg-btn').onclick = () => {
-            document.getElementById('show-reg-btn').style.display = 'none';
-            document.getElementById('auth-form').style.display = 'flex';
-        };
-
-        // Регистрация / Логин
         document.getElementById('auth-action-btn').onclick = async () => {
             const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value;
             const name = document.getElementById('reg-username').value.trim();
-            if(!email || !pass) return alert("Заполни поля");
-
             try {
                 if(!isLogin) {
-                    if(!name) return alert("Нужен юзернейм!");
                     const res = await createUserWithEmailAndPassword(auth, email, pass);
                     await set(ref(db, `users/${res.user.uid}`), { username: name, bio: "Hi!", email: email });
-                } else {
-                    await signInWithEmailAndPassword(auth, email, pass);
-                }
+                } else { await signInWithEmailAndPassword(auth, email, pass); }
             } catch(e) { alert(e.message); }
         };
 
-        // Загрузка чата
-        function loadChat(chatId, isChannel = false) {
-            currentChat = chatId;
-            messagesArea.innerHTML = '';
-            off(ref(db, `messages/${chatId}`));
-            
-            onChildAdded(ref(db, `messages/${chatId}`), (snap) => {
-                const m = snap.val();
-                const div = document.createElement('div');
-                div.className = m.uid === currentUser.uid ? 'msg mine' : 'msg';
-                
-                // Кнопка комментов только для каналов
-                const commBtn = isChannel ? `<div class="comm-trigger" onclick="window.openComments('${chatId}', '${snap.key}')">💬 Ответить</div>` : '';
-                
-                div.innerHTML = `<div class="msg-sender">${m.username}</div><div class="msg-text">${m.text}</div>${commBtn}`;
-                messagesArea.appendChild(div);
-                messagesArea.scrollTop = messagesArea.scrollHeight;
-            });
-        }
-
-        // Комментарии
+        // Интерфейсные кнопки
+        document.getElementById('btn-global').onclick = () => { 
+            document.getElementById('chat-title-top').innerText = "Общий чат";
+            document.getElementById('create-chan-btn').style.display = 'none';
+            loadChat('global'); 
+        };
+        document.getElementById('btn-channels').onclick = () => {
+            document.getElementById('create-chan-btn').style.display = 'block';
+            messagesArea.innerHTML = '<p style="text-align:center; opacity:0.3; margin-top:50px;">Ваши каналы загружены в список слева</p>';
+        };
+        document.getElementById('create-chan-btn').onclick = () => document.getElementById('chan-modal').style.display = 'flex';
+        document.getElementById('confirm-chan-btn').onclick = async () => {
+            const name = document.getElementById('new-chan-name').value;
+            const slug = document.getElementById('new-chan-slug').value.toLowerCase();
+            const newRef = push(ref(db, 'channels'));
+            const data = { name, slug, owner: currentUser.uid };
+            await set(newRef, data);
+            addChannelToSidebar(newRef.key, data);
+            document.getElementById('chan-modal').style.display = 'none';
+        };
+        document.getElementById('show-reg-btn').onclick = () => {
+            document.getElementById('show-reg-btn').style.display = 'none';
+            document.getElementById('auth-form').style.display = 'flex';
+        };
+        document.getElementById('open-settings').onclick = () => document.getElementById('settings-modal').style.display = 'flex';
+        document.getElementById('close-settings').onclick = () => document.getElementById('settings-modal').style.display = 'none';
+        document.getElementById('close-chan').onclick = () => document.getElementById('chan-modal').style.display = 'none';
+        document.getElementById('logout-btn').onclick = () => signOut(auth).then(()=>location.reload());
+        
+        // Глобальные ссылки для функций из HTML
         window.openComments = async (chatId, msgId) => {
             activePostId = msgId;
             document.getElementById('comments-modal').style.display = 'flex';
             const list = document.getElementById('comments-list');
             list.innerHTML = 'Загрузка...';
-            
             off(ref(db, `comments/${msgId}`));
             onChildAdded(ref(db, `comments/${msgId}`), (snap) => {
                 if(list.innerText === 'Загрузка...') list.innerHTML = '';
@@ -192,118 +289,7 @@
                 list.innerHTML += `<div style="margin-bottom:8px; font-size:13px;"><b style="color:#8a2be2;">${c.username}:</b> ${c.text}</div>`;
             });
         };
-
-        document.getElementById('send-comm-btn').onclick = () => {
-            const input = document.getElementById('comm-input');
-            if(input.value.trim() && activePostId) {
-                push(ref(db, `comments/${activePostId}`), {
-                    username: userData.username,
-                    text: input.value.trim()
-                });
-                input.value = '';
-            }
-        };
-
-        // Поиск с "Облачком"
-        document.getElementById('global-search').oninput = async (e) => {
-            const val = e.target.value.toLowerCase().trim().replace('#', '');
-            if(val.length < 2) { searchBubble.style.display = 'none'; return; }
-
-            const snap = await get(query(ref(db, 'channels'), orderByChild('slug'), equalTo(val)));
-            if(snap.exists()) {
-                const id = Object.keys(snap.val())[0];
-                const chan = snap.val()[id];
-                searchBubble.innerHTML = `<div class="search-item" id="found-${id}">
-                    <b>#${chan.slug}</b><br><small>${chan.name}</small>
-                </div>`;
-                searchBubble.style.display = 'block';
-
-                document.getElementById(`found-${id}`).onclick = () => {
-                    document.getElementById('chat-title-top').innerText = "# " + chan.name;
-                    loadChat(id, true);
-                    searchBubble.style.display = 'none';
-                    e.target.value = '';
-                };
-            } else {
-                searchBubble.innerHTML = '<div style="padding:10px; font-size:11px;">Ничего не найдено</div>';
-                searchBubble.style.display = 'block';
-            }
-        };
-
-        // Состояние
-        onAuthStateChanged(auth, async (user) => {
-            if(user) {
-                currentUser = user;
-                const snap = await get(ref(db, `users/${user.uid}`));
-                userData = snap.val() || { username: "User" };
-                
-                document.getElementById('user-name-mini').innerText = userData.username;
-                document.getElementById('user-avatar-mini').innerText = userData.username[0].toUpperCase();
-                document.getElementById('messenger-app').style.display = 'flex';
-                document.getElementById('main-screen').style.display = 'none';
-                loadChat('global');
-            } else {
-                document.getElementById('messenger-app').style.display = 'none';
-                document.getElementById('main-screen').style.display = 'flex';
-            }
-        });
-
-        // Отправка
-        document.getElementById('send-btn').onclick = () => {
-            const t = document.getElementById('msg-input').value.trim();
-            if(t && currentUser) {
-                push(ref(db, `messages/${currentChat}`), {
-                    uid: currentUser.uid,
-                    username: userData.username,
-                    text: t
-                });
-                document.getElementById('msg-input').value = '';
-            }
-        };
-
-        // Каналы
-        document.getElementById('btn-channels').onclick = () => {
-            document.getElementById('chat-title-top').innerText = "Мои каналы";
-            document.getElementById('create-chan-btn').style.display = 'block';
-            messagesArea.innerHTML = '<p style="text-align:center; opacity:0.3; margin-top:50px;">Создайте свой канал через кнопку сверху</p>';
-        };
-
-        document.getElementById('confirm-chan-btn').onclick = async () => {
-            const name = document.getElementById('new-chan-name').value;
-            const slug = document.getElementById('new-chan-slug').value.toLowerCase();
-            if(!name || !slug) return alert("Заполни всё");
-            
-            const newRef = push(ref(db, 'channels'));
-            await set(newRef, { name, slug, owner: currentUser.uid });
-            alert("Канал готов! Его можно найти по #" + slug);
-            document.getElementById('chan-modal').style.display = 'none';
-        };
-
-        // Кнопки интерфейса
-        document.getElementById('open-settings').onclick = () => {
-            document.getElementById('settings-modal').style.display = 'flex';
-            document.getElementById('edit-username').value = userData.username;
-            document.getElementById('prof-avatar').innerText = userData.username[0].toUpperCase();
-        };
-        document.getElementById('save-prof-btn').onclick = async () => {
-            await update(ref(db, `users/${currentUser.uid}`), { 
-                username: document.getElementById('edit-username').value,
-                bio: document.getElementById('edit-bio').value
-            });
-            location.reload();
-        };
-
-        document.getElementById('btn-global').onclick = () => { 
-            document.getElementById('chat-title-top').innerText = "Общий чат";
-            document.getElementById('create-chan-btn').style.display = 'none';
-            loadChat('global'); 
-        };
-        document.getElementById('create-chan-btn').onclick = () => document.getElementById('chan-modal').style.display = 'flex';
-        document.getElementById('close-settings').onclick = () => document.getElementById('settings-modal').style.display = 'none';
-        document.getElementById('close-chan').onclick = () => document.getElementById('chan-modal').style.display = 'none';
         document.getElementById('close-comments').onclick = () => document.getElementById('comments-modal').style.display = 'none';
-        document.getElementById('logout-btn').onclick = () => signOut(auth).then(()=>location.reload());
-
     </script>
 </body>
 </html>
