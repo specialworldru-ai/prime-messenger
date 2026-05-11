@@ -10,7 +10,6 @@
 
     <div class="main" id="main-screen">
         <h1 class="logo-text">PRIME</h1>
-        
         <button id="show-reg-btn" class="status-btn" style="width: 200px;">Зарегистрироваться</button>
 
         <div id="auth-form" class="auth-form" style="display: none;">
@@ -95,7 +94,6 @@
         let currentUser = null;
         let currentChat = 'global';
 
-        // ПЕРЕКЛЮЧЕНИЕ ВХОД/РЕГА
         const switchAuth = document.getElementById('switch-auth');
         const authTitle = document.getElementById('auth-title');
         const authBtn = document.getElementById('auth-action-btn');
@@ -115,8 +113,10 @@
         };
 
         authBtn.onclick = () => {
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value;
+            if(!email || !pass) return alert("Заполните поля!");
+            
             if(isLoginMode) {
                 signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Ошибка: " + e.message));
             } else {
@@ -124,22 +124,23 @@
             }
         };
 
-        // ЛОГИКА ЧАТА
         function loadMessages() {
             if (!currentUser) return;
             messagesArea.innerHTML = ''; 
-            
             const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
             
+            // Чистим старые подписки
             off(ref(db, 'messages/'));
             off(ref(db, `notes/${currentUser.uid}/`));
 
             onChildAdded(ref(db, path), (data) => {
                 const msg = data.val();
+                if(!msg.text) return;
+
                 const isMine = msg.email === currentUser.email;
                 const msgDiv = document.createElement('div');
                 msgDiv.className = isMine ? 'msg mine' : 'msg';
-                const displayName = currentChat === 'global' ? msg.email.split('@')[0] : 'Заметка';
+                const displayName = currentChat === 'global' ? (msg.email ? msg.email.split('@')[0] : 'Аноним') : 'Заметка';
                 
                 msgDiv.innerHTML = `<div class="msg-sender">${displayName}</div><div class="msg-text">${msg.text}</div>`;
                 messagesArea.appendChild(msgDiv);
@@ -172,7 +173,6 @@
             }
         };
 
-        // КЛИКИ ПО ЧАТАМ
         document.getElementById('btn-global').onclick = () => {
             document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
             document.getElementById('btn-global').classList.add('active');
@@ -189,7 +189,6 @@
             loadMessages();
         };
 
-        // МОДАЛКА
         document.getElementById('open-profile').onclick = () => document.getElementById('profile-modal').style.display = 'flex';
         document.getElementById('close-profile').onclick = () => document.getElementById('profile-modal').style.display = 'none';
         document.getElementById('logout-btn').onclick = () => {
