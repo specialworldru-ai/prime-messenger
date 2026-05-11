@@ -28,14 +28,14 @@
         <div class="sidebar">
             <div class="sidebar-header">PRIME</div>
             <div class="chats-list">
-                <div class="chat-item active">
+                <div class="chat-item active" id="btn-global">
                     <div class="chat-avatar">G</div>
                     <div class="chat-info">
                         <div class="chat-name">Общий чат</div>
-                        <div class="chat-last-msg">Загрузка...</div>
+                        <div class="chat-last-msg">Сообщений пока нет</div>
                     </div>
                 </div>
-                <div class="chat-item">
+                <div class="chat-item" id="btn-notes">
                     <div class="chat-avatar" style="background: #00d2ff;">S</div>
                     <div class="chat-info">
                         <div class="chat-name">Заметки</div>
@@ -54,7 +54,7 @@
         </div>
 
         <div class="chat-window">
-            <div class="chat-header">Общий чат</div>
+            <div class="chat-header" id="chat-title-top">Общий чат</div>
             <div class="messages-area" id="messages"></div>
             <div class="input-area">
                 <input type="text" id="msg-input" placeholder="Напишите сообщение...">
@@ -82,10 +82,6 @@
             apiKey: "AIzaSyDmhhGZ-yS5Q8RvYVeKObnj3JlANVzPG6M",
             authDomain: "primemessenger-73933.firebaseapp.com",
             projectId: "primemessenger-73933",
-            storageBucket: "primemessenger-73933.firebasestorage.app",
-            messagingSenderId: "129908663923",
-            appId: "1:129908663923:web:1341089b3acd29439cac06",
-            measurementId: "G-2PH3N5Q2N7",
             databaseURL: "https://primemessenger-73933-default-rtdb.europe-west1.firebasedatabase.app"
         };
 
@@ -122,71 +118,34 @@
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
             if(isLoginMode) {
-                signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Ошибка входа: " + e.message));
+                signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Ошибка: " + e.message));
             } else {
-                createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Ошибка регистрации: " + e.message));
+                createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Ошибка: " + e.message));
             }
         };
 
         // ЛОГИКА ЧАТА
         function loadMessages() {
-    if (!currentUser) return;
-    
-    const messagesArea = document.getElementById('messages');
-    messagesArea.innerHTML = ''; // СРАЗУ УДАЛЯЕМ НАДПИСЬ "ЗАГРУЗКА"
-    
-    const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-    
-    // Переподключаемся к базе
-    off(ref(db, 'messages/'));
-    onChildAdded(ref(db, path), (data) => {
-        const msg = data.val();
-        const isMine = msg.email === currentUser.email;
-        const msgDiv = document.createElement('div');
-        msgDiv.className = isMine ? 'msg mine' : 'msg';
-        msgDiv.innerHTML = `<div class="msg-sender">${msg.email.split('@')[0]}</div><div class="msg-text">${msg.text}</div>`;
-        messagesArea.appendChild(msgDiv);
-        messagesArea.scrollTop = messagesArea.scrollHeight;
-    });
-}
-    
-    messagesArea.innerHTML = '<div style="text-align:center; opacity:0.5;">Загрузка сообщений...</div>';
-    
-    // Определяем путь в базе
-    const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-    
-    // Снимаем старые слушатели, чтобы не дублировать
-    off(ref(db, 'messages/'));
-    if (currentUser) off(ref(db, `notes/${currentUser.uid}/`));
+            if (!currentUser) return;
+            messagesArea.innerHTML = ''; 
+            
+            const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
+            
+            off(ref(db, 'messages/'));
+            off(ref(db, `notes/${currentUser.uid}/`));
 
-    // Слушаем новые сообщения
-    onChildAdded(ref(db, path), (data) => {
-        // Убираем надпись "Загрузка" при первом же сообщении
-        if (messagesArea.innerText.includes("Загрузка сообщений...")) {
-            messagesArea.innerHTML = '';
+            onChildAdded(ref(db, path), (data) => {
+                const msg = data.val();
+                const isMine = msg.email === currentUser.email;
+                const msgDiv = document.createElement('div');
+                msgDiv.className = isMine ? 'msg mine' : 'msg';
+                const displayName = currentChat === 'global' ? msg.email.split('@')[0] : 'Заметка';
+                
+                msgDiv.innerHTML = `<div class="msg-sender">${displayName}</div><div class="msg-text">${msg.text}</div>`;
+                messagesArea.appendChild(msgDiv);
+                messagesArea.scrollTop = messagesArea.scrollHeight;
+            });
         }
-        
-        const msg = data.val();
-        const isMine = msg.email === currentUser.email;
-        const msgDiv = document.createElement('div');
-        msgDiv.className = isMine ? 'msg mine' : 'msg';
-        
-        // Красивое отображение отправителя
-        const displayName = currentChat === 'global' ? msg.email.split('@')[0] : 'Личная заметка';
-        
-        msgDiv.innerHTML = `
-            <div class="msg-sender">${displayName}</div>
-            <div class="msg-text">${msg.text}</div>
-        `;
-        
-        messagesArea.appendChild(msgDiv);
-        messagesArea.scrollTop = messagesArea.scrollHeight;
-        
-        // Обновляем текст в сайдбаре (чтобы "Загрузка" пропала и там)
-        const activeChatMsg = document.querySelector('.chat-item.active .chat-last-msg');
-        if (activeChatMsg) activeChatMsg.innerText = msg.text.substring(0, 20) + "...";
-    });
-}
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -208,22 +167,27 @@
             const text = msgInput.value.trim();
             if (text && currentUser) {
                 const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-                push(ref(db, path), { email: currentUser.email, text: text, time: new Date().toLocaleTimeString() });
+                push(ref(db, path), { email: currentUser.email, text: text });
                 msgInput.value = "";
             }
         };
 
         // КЛИКИ ПО ЧАТАМ
-        document.querySelectorAll('.chat-item').forEach(item => {
-            item.onclick = () => {
-                document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-                const name = item.querySelector('.chat-name').innerText;
-                document.querySelector('.chat-header').innerText = name;
-                currentChat = (name === 'Заметки') ? 'notes' : 'global';
-                loadMessages();
-            };
-        });
+        document.getElementById('btn-global').onclick = () => {
+            document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('btn-global').classList.add('active');
+            document.getElementById('chat-title-top').innerText = "Общий чат";
+            currentChat = 'global';
+            loadMessages();
+        };
+
+        document.getElementById('btn-notes').onclick = () => {
+            document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('btn-notes').classList.add('active');
+            document.getElementById('chat-title-top').innerText = "Заметки";
+            currentChat = 'notes';
+            loadMessages();
+        };
 
         // МОДАЛКА
         document.getElementById('open-profile').onclick = () => document.getElementById('profile-modal').style.display = 'flex';
