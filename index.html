@@ -10,50 +10,53 @@
 
     <div class="main" id="main-screen">
         <h1 class="logo-text">PRIME</h1>
-        <button id="show-reg-btn" class="status-btn" style="width: 200px;">Зарегистрироваться</button>
+        <button id="show-reg-btn" class="status-btn" style="width: 200px;">Начать</button>
 
         <div id="auth-form" class="auth-form" style="display: none;">
             <h2 id="auth-title">Регистрация</h2>
+            <input type="text" id="reg-username" placeholder="Юзернейм (@name)">
             <input type="email" id="email" placeholder="Почта">
             <input type="password" id="password" placeholder="Пароль">
             <button id="auth-action-btn" class="status-btn">Создать аккаунт</button>
-            <p class="auth-switch-text">
-                Уже есть аккаунт? <span id="switch-auth">Войти</span>
-            </p>
+            <p class="auth-switch-text">Уже есть аккаунт? <span id="switch-auth">Войти</span></p>
         </div>
     </div>
 
     <div id="messenger-app" class="messenger-container" style="display: none;">
         <div class="sidebar">
             <div class="sidebar-header">PRIME</div>
+            
+            <div class="search-box" style="padding: 0 10px 10px;">
+                <input type="text" id="global-search" placeholder="Поиск @юзера или #канала" 
+                       style="width: 100%; padding: 8px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(138,43,226,0.3); color: white; font-size: 12px;">
+            </div>
+
             <div class="chats-list">
                 <div class="chat-item active" id="btn-global">
                     <div class="chat-avatar">G</div>
-                    <div class="chat-info">
-                        <div class="chat-name">Общий чат</div>
-                        <div class="chat-last-msg">Сообщений пока нет</div>
-                    </div>
+                    <div class="chat-info"><div class="chat-name">Общий чат</div></div>
                 </div>
-                <div class="chat-item" id="btn-notes">
-                    <div class="chat-avatar" style="background: #00d2ff;">S</div>
-                    <div class="chat-info">
-                        <div class="chat-name">Заметки</div>
-                        <div class="chat-last-msg">Личное пространство</div>
-                    </div>
+                <div class="chat-item" id="btn-channels">
+                    <div class="chat-avatar" style="background: #ff8c00;">#</div>
+                    <div class="chat-info"><div class="chat-name">Мои Каналы</div></div>
                 </div>
+                <div id="dynamic-list"></div>
             </div>
 
-            <div class="user-profile-bottom" id="open-profile">
+            <div class="user-profile-bottom" id="open-settings">
                 <div class="chat-avatar" id="user-avatar-mini" style="background: #8a2be2;">?</div>
                 <div class="chat-info">
                     <div class="chat-name" id="user-name-mini">User</div>
-                    <div style="font-size: 10px; color: rgba(255,255,255,0.5);">Мой профиль</div>
+                    <div style="font-size: 10px; color: rgba(255,255,255,0.5);">Настройки профиля</div>
                 </div>
             </div>
         </div>
 
         <div class="chat-window">
-            <div class="chat-header" id="chat-title-top">Общий чат</div>
+            <div class="chat-header">
+                <span id="chat-title-top">Общий чат</span>
+                <button id="create-chan-btn" class="status-btn" style="margin-left: auto; padding: 5px 10px; font-size: 12px; display: none;">+ Канал</button>
+            </div>
             <div class="messages-area" id="messages"></div>
             <div class="input-area">
                 <input type="text" id="msg-input" placeholder="Напишите сообщение...">
@@ -62,20 +65,34 @@
         </div>
     </div>
 
-    <div id="profile-modal" class="modal-overlay" style="display: none;">
+    <div id="settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="width: 350px;">
+            <div class="chat-avatar" id="prof-avatar" style="width: 70px; height: 70px; margin: 0 auto 10px; font-size: 24px;">?</div>
+            <input type="text" id="edit-username" placeholder="Изменить имя" style="margin-bottom: 10px;">
+            <textarea id="edit-bio" placeholder="О себе" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; border-radius: 8px; padding: 10px; margin-bottom: 10px;"></textarea>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button id="save-prof-btn" class="status-btn" style="flex: 1;">Сохранить</button>
+                <button id="logout-btn" class="status-btn" style="background: #ff4b4b;">Выйти</button>
+            </div>
+            <button id="close-settings" style="color: #888; background: none; border: none; cursor: pointer;">Закрыть</button>
+        </div>
+    </div>
+
+    <div id="chan-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <div class="chat-avatar" id="profile-img" style="width: 80px; height: 80px; font-size: 30px; margin: 0 auto 15px;">?</div>
-            <h3 id="profile-email">email@mail.com</h3>
-            <div style="color: #8a2be2; font-weight: bold; margin-bottom: 20px;">PREMIUM STATUS</div>
-            <button id="logout-btn" class="status-btn" style="background: #ff4b4b;">Выйти</button>
-            <button id="close-profile" style="background: none; border: none; color: #555; margin-top: 10px; cursor: pointer;">Закрыть</button>
+            <h3>Создать канал</h3>
+            <input type="text" id="new-chan-name" placeholder="Название канала" style="margin-bottom: 10px;">
+            <input type="text" id="new-chan-slug" placeholder="Кастомный URL (например: my_club)" style="margin-bottom: 10px;">
+            <button id="confirm-chan-btn" class="status-btn" style="width: 100%;">Создать</button>
+            <button id="close-chan" style="margin-top: 10px; background: none; border: none; color: #888; cursor: pointer;">Отмена</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, push, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, push, onChildAdded, off, set, get, child, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDmhhGZ-yS5Q8RvYVeKObnj3JlANVzPG6M",
@@ -88,23 +105,22 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
 
+        let currentUser = null;
+        let userData = {};
+        let currentChat = 'global'; // ID канала или 'global'
+
+        // Элементы
         const messagesArea = document.getElementById('messages');
         const msgInput = document.getElementById('msg-input');
-        const sendBtn = document.getElementById('send-btn');
-        let currentUser = null;
-        let currentChat = 'global';
 
+        // Логика переключения Вход/Регистрация
         const switchAuth = document.getElementById('switch-auth');
-        const authTitle = document.getElementById('auth-title');
-        const authBtn = document.getElementById('auth-action-btn');
-        let isLoginMode = false;
-
+        let isLogin = false;
         switchAuth.onclick = () => {
-            isLoginMode = !isLoginMode;
-            authTitle.innerText = isLoginMode ? "Вход" : "Регистрация";
-            authBtn.innerText = isLoginMode ? "Войти" : "Создать аккаунт";
-            switchAuth.innerText = isLoginMode ? "Зарегистрироваться" : "Войти";
-            switchAuth.parentElement.firstChild.textContent = isLoginMode ? "Нет аккаунта? " : "Уже есть аккаунт? ";
+            isLogin = !isLogin;
+            document.getElementById('auth-title').innerText = isLogin ? "Вход" : "Регистрация";
+            document.getElementById('reg-username').style.display = isLogin ? "none" : "block";
+            document.getElementById('auth-action-btn').innerText = isLogin ? "Войти" : "Создать аккаунт";
         };
 
         document.getElementById('show-reg-btn').onclick = () => {
@@ -112,88 +128,138 @@
             document.getElementById('auth-form').style.display = 'flex';
         };
 
-        authBtn.onclick = () => {
-            const email = document.getElementById('email').value.trim();
+        // Авторизация
+        document.getElementById('auth-action-btn').onclick = async () => {
+            const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
-            if(!email || !pass) return alert("Заполните поля!");
-            
-            if(isLoginMode) {
-                signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Ошибка: " + e.message));
-            } else {
-                createUserWithEmailAndPassword(auth, email, pass).catch(e => alert("Ошибка: " + e.message));
-            }
+            const userHandle = document.getElementById('reg-username').value.trim();
+
+            try {
+                if (!isLogin) {
+                    if (!userHandle) return alert("Введите юзернейм!");
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    await set(ref(db, `users/${res.user.uid}`), {
+                        username: userHandle,
+                        email: email,
+                        bio: "Новичок в PRIME",
+                        avatarColor: "#8a2be2"
+                    });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
+            } catch (e) { alert(e.message); }
         };
 
-        function loadMessages() {
-            if (!currentUser) return;
-            messagesArea.innerHTML = ''; 
-            const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-            
-            // Чистим старые подписки
-            off(ref(db, 'messages/'));
-            off(ref(db, `notes/${currentUser.uid}/`));
-
-            onChildAdded(ref(db, path), (data) => {
-                const msg = data.val();
-                if(!msg.text) return;
-
-                const isMine = msg.email === currentUser.email;
-                const msgDiv = document.createElement('div');
-                msgDiv.className = isMine ? 'msg mine' : 'msg';
-                const displayName = currentChat === 'global' ? (msg.email ? msg.email.split('@')[0] : 'Аноним') : 'Заметка';
-                
-                msgDiv.innerHTML = `<div class="msg-sender">${displayName}</div><div class="msg-text">${msg.text}</div>`;
-                messagesArea.appendChild(msgDiv);
+        // Загрузка сообщений
+        function loadMessages(chatId) {
+            messagesArea.innerHTML = '';
+            off(ref(db, `messages/${chatId}`));
+            onChildAdded(ref(db, `messages/${chatId}`), (data) => {
+                const m = data.val();
+                const div = document.createElement('div');
+                div.className = m.uid === currentUser.uid ? 'msg mine' : 'msg';
+                div.innerHTML = `<div class="msg-sender">${m.username}</div><div class="msg-text">${m.text}</div>`;
+                messagesArea.appendChild(div);
                 messagesArea.scrollTop = messagesArea.scrollHeight;
             });
         }
 
-        onAuthStateChanged(auth, (user) => {
+        // Состояние юзера
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
+                const snap = await get(ref(db, `users/${user.uid}`));
+                userData = snap.val() || {};
+                
+                document.getElementById('user-name-mini').innerText = userData.username || "User";
+                document.getElementById('user-avatar-mini').innerText = (userData.username || "U")[0].toUpperCase();
                 document.getElementById('main-screen').style.display = 'none';
                 document.getElementById('messenger-app').style.display = 'flex';
-                document.getElementById('user-name-mini').innerText = user.email.split('@')[0];
-                document.getElementById('user-avatar-mini').innerText = user.email[0].toUpperCase();
-                document.getElementById('profile-email').innerText = user.email;
-                document.getElementById('profile-img').innerText = user.email[0].toUpperCase();
-                loadMessages();
+                loadMessages('global');
             } else {
                 document.getElementById('main-screen').style.display = 'flex';
                 document.getElementById('messenger-app').style.display = 'none';
             }
         });
 
-        sendBtn.onclick = () => {
-            const text = msgInput.value.trim();
-            if (text && currentUser) {
-                const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-                push(ref(db, path), { email: currentUser.email, text: text });
-                msgInput.value = "";
+        // Отправка
+        document.getElementById('send-btn').onclick = () => {
+            const txt = msgInput.value.trim();
+            if (txt && currentUser) {
+                push(ref(db, `messages/${currentChat}`), {
+                    uid: currentUser.uid,
+                    username: userData.username,
+                    text: txt,
+                    time: Date.now()
+                });
+                msgInput.value = '';
             }
         };
 
-        document.getElementById('btn-global').onclick = () => {
-            document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-            document.getElementById('btn-global').classList.add('active');
-            document.getElementById('chat-title-top').innerText = "Общий чат";
-            currentChat = 'global';
-            loadMessages();
+        // Настройки
+        document.getElementById('open-settings').onclick = () => {
+            document.getElementById('settings-modal').style.display = 'flex';
+            document.getElementById('edit-username').value = userData.username;
+            document.getElementById('edit-bio').value = userData.bio || "";
+            document.getElementById('prof-avatar').innerText = userData.username[0].toUpperCase();
         };
 
-        document.getElementById('btn-notes').onclick = () => {
-            document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-            document.getElementById('btn-notes').classList.add('active');
-            document.getElementById('chat-title-top').innerText = "Заметки";
-            currentChat = 'notes';
-            loadMessages();
+        document.getElementById('save-prof-btn').onclick = async () => {
+            const newName = document.getElementById('edit-username').value.trim();
+            const newBio = document.getElementById('edit-bio').value.trim();
+            await update(ref(db, `users/${currentUser.uid}`), { username: newName, bio: newBio });
+            location.reload();
         };
 
-        document.getElementById('open-profile').onclick = () => document.getElementById('profile-modal').style.display = 'flex';
-        document.getElementById('close-profile').onclick = () => document.getElementById('profile-modal').style.display = 'none';
-        document.getElementById('logout-btn').onclick = () => {
-            signOut(auth).then(() => location.reload());
+        // Поиск
+        document.getElementById('global-search').onkeypress = async (e) => {
+            if(e.key === 'Enter') {
+                const queryVal = e.target.value.toLowerCase().replace('@', '').replace('#', '');
+                // Сначала ищем каналы по кастомному URL
+                const chanSnap = await get(query(ref(db, 'channels'), orderByChild('slug'), equalTo(queryVal)));
+                if(chanSnap.exists()) {
+                    const chanId = Object.keys(chanSnap.val())[0];
+                    currentChat = chanId;
+                    document.getElementById('chat-title-top').innerText = "# " + chanSnap.val()[chanId].name;
+                    loadMessages(chanId);
+                    alert("Канал найден!");
+                } else {
+                    alert("Ничего не найдено. Попробуйте точный @юзернейм или #URL_канала");
+                }
+            }
         };
+
+        // Каналы
+        document.getElementById('btn-channels').onclick = () => {
+            currentChat = 'channels_view';
+            document.getElementById('chat-title-top').innerText = "Ваши каналы";
+            document.getElementById('create-chan-btn').style.display = 'block';
+            messagesArea.innerHTML = '<p style="text-align:center; opacity:0.5;">Здесь будут ваши созданные каналы</p>';
+        };
+
+        document.getElementById('create-chan-btn').onclick = () => document.getElementById('chan-modal').style.display = 'flex';
+        
+        document.getElementById('confirm-chan-btn').onclick = async () => {
+            const name = document.getElementById('new-chan-name').value.trim();
+            const slug = document.getElementById('new-chan-slug').value.trim().toLowerCase();
+            if(!name || !slug) return alert("Заполните всё!");
+            
+            const newChanRef = push(ref(db, 'channels'));
+            await set(newChanRef, {
+                name: name,
+                slug: slug,
+                owner: currentUser.uid,
+                randomId: Math.random().toString(36).substring(7)
+            });
+            alert("Канал создан! Теперь его можно найти через поиск по #" + slug);
+            document.getElementById('chan-modal').style.display = 'none';
+        };
+
+        document.getElementById('close-settings').onclick = () => document.getElementById('settings-modal').style.display = 'none';
+        document.getElementById('close-chan').onclick = () => document.getElementById('chan-modal').style.display = 'none';
+        document.getElementById('logout-btn').onclick = () => signOut(auth).then(() => location.reload());
+        document.getElementById('btn-global').onclick = () => { currentChat = 'global'; loadMessages('global'); document.getElementById('chat-title-top').innerText = "Общий чат"; };
+
     </script>
 </body>
 </html>

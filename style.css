@@ -85,3 +85,36 @@ body {
 /* МОДАЛКА */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 3000; }
 .modal-content { background: #110a1f; padding: 30px; border-radius: 24px; border: 1px solid #8a2be2; text-align: center; width: 280px; }
+
+/* Дополнительные стили для поиска и модалок */
+.search-box input:focus {
+    border-color: #8a2be2;
+    outline: none;
+    box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+}
+
+#settings-modal input, #chan-modal input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    background: #000;
+    border: 1px solid #333;
+    color: #fff;
+    box-sizing: border-box;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    color: #8a2be2;
+}
+
+.chat-item:hover {
+    background: rgba(138, 43, 226, 0.1);
+}
+
+.msg-sender {
+    font-weight: bold;
+    color: #8a2be2;
+    cursor: pointer;
+}
