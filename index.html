@@ -130,22 +130,63 @@
 
         // ЛОГИКА ЧАТА
         function loadMessages() {
-            if (!currentUser) return;
-            messagesArea.innerHTML = '';
-            const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-            off(ref(db, 'messages/'));
-            off(ref(db, `notes/${currentUser.uid}/`));
+    if (!currentUser) return;
+    
+    const messagesArea = document.getElementById('messages');
+    messagesArea.innerHTML = ''; // СРАЗУ УДАЛЯЕМ НАДПИСЬ "ЗАГРУЗКА"
+    
+    const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
+    
+    // Переподключаемся к базе
+    off(ref(db, 'messages/'));
+    onChildAdded(ref(db, path), (data) => {
+        const msg = data.val();
+        const isMine = msg.email === currentUser.email;
+        const msgDiv = document.createElement('div');
+        msgDiv.className = isMine ? 'msg mine' : 'msg';
+        msgDiv.innerHTML = `<div class="msg-sender">${msg.email.split('@')[0]}</div><div class="msg-text">${msg.text}</div>`;
+        messagesArea.appendChild(msgDiv);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    });
+}
+    
+    messagesArea.innerHTML = '<div style="text-align:center; opacity:0.5;">Загрузка сообщений...</div>';
+    
+    // Определяем путь в базе
+    const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
+    
+    // Снимаем старые слушатели, чтобы не дублировать
+    off(ref(db, 'messages/'));
+    if (currentUser) off(ref(db, `notes/${currentUser.uid}/`));
 
-            onChildAdded(ref(db, path), (data) => {
-                const msg = data.val();
-                const isMine = msg.email === currentUser.email;
-                const msgDiv = document.createElement('div');
-                msgDiv.className = isMine ? 'msg mine' : 'msg';
-                msgDiv.innerHTML = `<div class="msg-sender">${currentChat === 'global' ? msg.email.split('@')[0] : 'Заметка'}</div><div class="msg-text">${msg.text}</div>`;
-                messagesArea.appendChild(msgDiv);
-                messagesArea.scrollTop = messagesArea.scrollHeight;
-            });
+    // Слушаем новые сообщения
+    onChildAdded(ref(db, path), (data) => {
+        // Убираем надпись "Загрузка" при первом же сообщении
+        if (messagesArea.innerText.includes("Загрузка сообщений...")) {
+            messagesArea.innerHTML = '';
         }
+        
+        const msg = data.val();
+        const isMine = msg.email === currentUser.email;
+        const msgDiv = document.createElement('div');
+        msgDiv.className = isMine ? 'msg mine' : 'msg';
+        
+        // Красивое отображение отправителя
+        const displayName = currentChat === 'global' ? msg.email.split('@')[0] : 'Личная заметка';
+        
+        msgDiv.innerHTML = `
+            <div class="msg-sender">${displayName}</div>
+            <div class="msg-text">${msg.text}</div>
+        `;
+        
+        messagesArea.appendChild(msgDiv);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+        
+        // Обновляем текст в сайдбаре (чтобы "Загрузка" пропала и там)
+        const activeChatMsg = document.querySelector('.chat-item.active .chat-last-msg');
+        if (activeChatMsg) activeChatMsg.innerText = msg.text.substring(0, 20) + "...";
+    });
+}
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
