@@ -1,12 +1,7 @@
 /* Базовые настройки экрана */
 body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: #000;
-    color: #fff;
-    height: 100vh;
-    overflow: hidden;
+    background: radial-gradient(circle at top left, #1a0b2e, #050505);
+    background-attachment: fixed;
 }
 
 .messenger-container {
@@ -15,13 +10,12 @@ body {
     height: 100vh;
 }
 
-/* --- САЙДБАР (Суженный до 260px) --- */
+/* Сайдбар: стал ещё уже (240px) и с эффектом стекла */
 .sidebar {
-    width: 260px;
-    background-color: #000;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    width: 240px; 
+    background: rgba(20, 10, 35, 0.6); /* Полупрозрачный фиолетовый */
+    backdrop-filter: blur(20px); /* Сильное размытие фона */
+    border-right: 1px solid rgba(138, 43, 226, 0.2); /* Фиолетовая обводка */
     flex-shrink: 0;
 }
 
@@ -101,20 +95,17 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: #0a0a0a;
+    background: rgba(0, 0, 0, 0.2); /* Чтобы просвечивал фон body */
 }
 
 /* ШАПКА ЧАТА (Крутой дизайн) */
 .chat-header {
     height: 60px;
     padding: 0 25px;
-    display: flex;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(40, 20, 70, 0.4);
     backdrop-filter: blur(15px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    font-size: 16px;
-    font-weight: 600;
+    border-bottom: 1px solid rgba(138, 43, 226, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
 .messages-area {
@@ -128,14 +119,8 @@ body {
 
 /* --- ПРОФИЛЬ ВНИЗУ --- */
 .user-profile-bottom {
-    margin-top: auto;
-    padding: 12px 15px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(138, 43, 226, 0.1);
+    border-top: 1px solid rgba(138, 43, 226, 0.2);
 }
 
 .user-profile-bottom:hover {
@@ -169,18 +154,15 @@ body {
 }
 
 .msg {
-    max-width: 70%;
-    padding: 10px 15px;
-    border-radius: 15px;
-    background: #1e1e1e;
-    align-self: flex-start;
-    position: relative;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .msg.mine {
-    background: #007aff;
-    align-self: flex-end;
-    color: white;
+    background: linear-gradient(135deg, #8a2be2, #4b0082); /* Фиолетовый градиент */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
 }
 
 .msg-sender {
