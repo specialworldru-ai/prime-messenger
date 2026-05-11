@@ -25,7 +25,28 @@
 
     <div id="messenger-app" class="messenger-container" style="display: none;">
         <aside class="sidebar">
-            <div class="sidebar-header">PRIME</div>
+    <div class="sidebar-header">PRIME</div>
+    <div class="chats-list">
+        </div>
+
+    <div class="user-profile-bottom" id="open-profile">
+        <div class="chat-avatar" id="user-avatar-mini">?</div>
+        <div class="chat-info">
+            <div class="chat-name" id="user-name-mini">Загрузка...</div>
+            <div class="chat-last-msg">Мой профиль</div>
+        </div>
+    </div>
+</aside>
+
+<div id="profile-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal" id="close-profile">&times;</span>
+        <div class="chat-avatar profile-large" id="profile-img">?</div>
+        <h2 id="profile-email">email@test.com</h2>
+        <p style="color: #888; font-size: 12px; margin-bottom: 20px;">Статус: PREMIUM</p>
+        <button id="logout-btn" class="status-btn" style="background: #ff3b30; width: 100%;">Выйти из PRIME</button>
+    </div>
+</div>
             <div class="chats-list">
                 <div class="chat-item active" data-type="global">
                     <div class="chat-avatar">G</div>
@@ -54,119 +75,135 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, push, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, push, onChildAdded, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDmhhGZ-yS5Q8RvYVeKObnj3JlANVzPG6M",
-            authDomain: "primemessenger-73933.firebaseapp.com",
-            projectId: "primemessenger-73933",
-            storageBucket: "primemessenger-73933.firebasestorage.app",
-            messagingSenderId: "129908663923",
-            appId: "1:129908663923:web:1341089b3acd29439cac06",
-            measurementId: "G-2PH3N5Q2N7",
-            databaseURL: "https://primemessenger-73933-default-rtdb.europe-west1.firebasedatabase.app"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyDmhhGZ-yS5Q8RvYVeKObnj3JlANVzPG6M",
+        authDomain: "primemessenger-73933.firebaseapp.com",
+        projectId: "primemessenger-73933",
+        storageBucket: "primemessenger-73933.firebasestorage.app",
+        messagingSenderId: "129908663923",
+        appId: "1:129908663923:web:1341089b3acd29439cac06",
+        measurementId: "G-2PH3N5Q2N7",
+        databaseURL: "https://primemessenger-73933-default-rtdb.europe-west1.firebasedatabase.app"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
 
-        const mainScreen = document.querySelector('.main');
-        const messengerApp = document.getElementById('messenger-app');
-        const chatHeader = document.querySelector('.chat-header');
-        const chatItems = document.querySelectorAll('.chat-item');
-        const messagesArea = document.getElementById('messages');
-        const msgInput = document.getElementById('msg-input');
-        const sendBtn = document.getElementById('send-btn');
+    // ЭЛЕМЕНТЫ ИНТЕРФЕЙСА
+    const mainScreen = document.querySelector('.main');
+    const messengerApp = document.getElementById('messenger-app');
+    const chatHeader = document.querySelector('.chat-header');
+    const chatItems = document.querySelectorAll('.chat-item');
+    const messagesArea = document.getElementById('messages');
+    const msgInput = document.getElementById('msg-input');
+    const sendBtn = document.getElementById('send-btn');
 
-        let currentUser = null;
-        let currentChat = 'global';
+    // ЭЛЕМЕНТЫ ПРОФИЛЯ
+    const profileModal = document.getElementById('profile-modal');
+    const openProfileBtn = document.getElementById('open-profile');
+    const closeProfileBtn = document.getElementById('close-profile');
+    const logoutBtn = document.getElementById('logout-btn');
 
-        // Функция загрузки сообщений
-        function loadMessages() {
-    if (!currentUser) return; // Защита, если юзер еще не подгрузился
-    
-    messagesArea.innerHTML = '';
-    const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-    
-    // Снимаем старые прослушки
-    off(ref(db, 'messages/'));
-    off(ref(db, `notes/${currentUser.uid}/`));
+    let currentUser = null;
+    let currentChat = 'global';
 
-    onChildAdded(ref(db, path), (data) => {
-        const msg = data.val();
-        const isMine = msg.email === currentUser.email;
+    // ФУНКЦИЯ ЗАГРУЗКИ СООБЩЕНИЙ
+    function loadMessages() {
+        if (!currentUser) return;
+        messagesArea.innerHTML = '';
+        const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
         
-        // 1. Рисуем само сообщение в чате
-        const msgDiv = document.createElement('div');
-        msgDiv.className = isMine ? 'msg mine' : 'msg';
-        msgDiv.innerHTML = `
-            <div class="msg-sender">${currentChat === 'global' ? msg.email.split('@')[0] : 'Заметка'}</div>
-            <div class="msg-text">${msg.text}</div>
-        `;
-        messagesArea.appendChild(msgDiv);
-        messagesArea.scrollTop = messagesArea.scrollHeight;
+        off(ref(db, 'messages/'));
+        off(ref(db, `notes/${currentUser.uid}/`));
 
-        // 2. ВОТ ТУТ МЫ УБИРАЕМ "ЗАГРУЗКУ" И ПИШЕМ ТЕКСТ В САЙДБАР
-        // Ищем активный чат и обновляем в нем последнее сообщение
-        const activePreview = document.querySelector('.chat-item.active .chat-last-msg');
-        if (activePreview) {
-            activePreview.innerText = (isMine ? "Вы: " : "") + msg.text;
+        onChildAdded(ref(db, path), (data) => {
+            const msg = data.val();
+            const isMine = msg.email === currentUser.email;
+            const msgDiv = document.createElement('div');
+            msgDiv.className = isMine ? 'msg mine' : 'msg';
+            msgDiv.innerHTML = `
+                <div class="msg-sender">${currentChat === 'global' ? msg.email.split('@')[0] : 'Заметка'}</div>
+                <div class="msg-text">${msg.text}</div>
+            `;
+            messagesArea.appendChild(msgDiv);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        });
+    }
+
+    // ГЛАВНЫЙ СЛУШАТЕЛЬ ВХОДА (Та самая "коробка")
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            mainScreen.style.display = 'none';
+            messengerApp.style.display = 'flex';
+            
+            // Обновляем данные профиля
+            document.getElementById('user-name-mini').innerText = user.email.split('@')[0];
+            document.getElementById('user-avatar-mini').innerText = user.email[0].toUpperCase();
+            document.getElementById('profile-email').innerText = user.email;
+            document.getElementById('profile-img').innerText = user.email[0].toUpperCase();
+            
+            loadMessages();
+        } else {
+            mainScreen.style.display = 'flex';
+            messengerApp.style.display = 'none';
         }
     });
-}
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                mainScreen.style.display = 'none';
-                messengerApp.style.display = 'flex';
-                loadMessages();
-            } else {
-                mainScreen.style.display = 'flex';
-                messengerApp.style.display = 'none';
-            }
-        });
-
-        chatItems.forEach(item => {
-            item.onclick = () => {
-                chatItems.forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-                const name = item.querySelector('.chat-name').innerText;
-                chatHeader.innerText = name;
-                currentChat = (name === 'Заметки') ? 'notes' : 'global';
-                loadMessages();
-            };
-        });
-
-        sendBtn.onclick = () => {
-            const text = msgInput.value.trim();
-            if (text && currentUser) {
-                const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
-                push(ref(db, path), {
-                    email: currentUser.email,
-                    text: text,
-                    time: new Date().toLocaleTimeString()
-                });
-                msgInput.value = "";
-            }
+    // ПЕРЕКЛЮЧЕНИЕ ЧАТОВ
+    chatItems.forEach(item => {
+        item.onclick = () => {
+            chatItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            const name = item.querySelector('.chat-name').innerText;
+            chatHeader.innerText = name;
+            currentChat = (name === 'Заметки') ? 'notes' : 'global';
+            loadMessages();
         };
+    });
 
-        // Логика кнопок входа (показать форму и т.д.)
-        document.getElementById('show-reg-btn').onclick = () => {
-            document.getElementById('show-reg-btn').style.display = 'none';
-            document.getElementById('auth-form').style.display = 'flex';
-        };
-
-        document.getElementById('auth-action-btn').onclick = () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            signInWithEmailAndPassword(auth, email, pass).catch(() => {
-                createUserWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+    // ОТПРАВКА СООБЩЕНИЙ
+    sendBtn.onclick = () => {
+        const text = msgInput.value.trim();
+        if (text && currentUser) {
+            const path = currentChat === 'global' ? 'messages/' : `notes/${currentUser.uid}/`;
+            push(ref(db, path), {
+                email: currentUser.email,
+                text: text,
+                time: new Date().toLocaleTimeString()
             });
-        };
-    </script>
+            msgInput.value = "";
+        }
+    };
+
+    // ЛОГИКА ПРОФИЛЯ
+    if (openProfileBtn) openProfileBtn.onclick = () => profileModal.style.display = 'flex';
+    if (closeProfileBtn) closeProfileBtn.onclick = () => profileModal.style.display = 'none';
+    if (logoutBtn) logoutBtn.onclick = () => {
+        auth.signOut().then(() => {
+            profileModal.style.display = 'none';
+            location.reload();
+        });
+    };
+
+    // ВХОД / РЕГИСТРАЦИЯ
+    document.getElementById('show-reg-btn').onclick = () => {
+        document.getElementById('show-reg-btn').style.display = 'none';
+        document.getElementById('auth-form').style.display = 'flex';
+    };
+
+    document.getElementById('auth-action-btn').onclick = () => {
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('password').value;
+        signInWithEmailAndPassword(auth, email, pass).catch(() => {
+            createUserWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
+        });
+    };
+</script>
 </body>
 </html>
